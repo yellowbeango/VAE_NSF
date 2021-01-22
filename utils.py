@@ -12,8 +12,9 @@ import torch
 import torch.nn as nn
 import torch.nn.init as init
 
-__all__=["get_mean_and_std","progress_bar","format_time",
-         'adjust_learning_rate', 'AverageMeter','Logger','mkdir_p']
+__all__ = ["get_mean_and_std", "progress_bar", "format_time",
+           'adjust_learning_rate', 'AverageMeter', 'Logger', 'mkdir_p']
+
 
 def get_mean_and_std(dataset):
     '''Compute the mean and std value of dataset.'''
@@ -21,12 +22,12 @@ def get_mean_and_std(dataset):
     print('==> Computing mean and std..')
     mean, std = 0, 0
     for inputs, targets in dataloader:
-        print(f"inputs shape: {inputs.shape}")
-        mean += inputs[:,0,:,:].mean()
-        std += inputs[:,0,:,:].std()
+        mean += inputs[:, 0, :, :].mean()
+        std += inputs[:, 0, :, :].std()
     mean.div_(len(dataset))
     std.div_(len(dataset))
     return mean, std
+
 
 def init_params(net):
     '''Init layer parameters.'''
@@ -50,12 +51,14 @@ def init_params(net):
 TOTAL_BAR_LENGTH = 65.
 last_time = time.time()
 begin_time = last_time
+
+
 def progress_bar(current, total, msg=None):
     global last_time, begin_time
     if current == 0:
         begin_time = time.time()  # Reset for new bar.
 
-    cur_len = int(TOTAL_BAR_LENGTH*current/total)
+    cur_len = int(TOTAL_BAR_LENGTH * current / total)
     rest_len = int(TOTAL_BAR_LENGTH - cur_len) - 1
 
     sys.stdout.write(' [')
@@ -85,24 +88,25 @@ def progress_bar(current, total, msg=None):
     # Go back to the center of the bar.
     # for i in range(term_width-int(TOTAL_BAR_LENGTH/2)+2):
     #     sys.stdout.write('\b')
-    sys.stdout.write(' %d/%d ' % (current+1, total))
+    sys.stdout.write(' %d/%d ' % (current + 1, total))
 
-    if current < total-1:
+    if current < total - 1:
         sys.stdout.write('\r')
     else:
         sys.stdout.write('\n')
     sys.stdout.flush()
 
+
 def format_time(seconds):
-    days = int(seconds / 3600/24)
-    seconds = seconds - days*3600*24
+    days = int(seconds / 3600 / 24)
+    seconds = seconds - days * 3600 * 24
     hours = int(seconds / 3600)
-    seconds = seconds - hours*3600
+    seconds = seconds - hours * 3600
     minutes = int(seconds / 60)
-    seconds = seconds - minutes*60
+    seconds = seconds - minutes * 60
     secondsf = int(seconds)
     seconds = seconds - secondsf
-    millis = int(seconds*1000)
+    millis = int(seconds * 1000)
 
     f = ''
     i = 1
@@ -125,7 +129,8 @@ def format_time(seconds):
         f = '0ms'
     return f
 
-def write_record(file_path,str):
+
+def write_record(file_path, str):
     if not os.path.exists(file_path):
         # os.makedirs(file_path)
         os.system(r"touch {}".format(file_path))
@@ -133,16 +138,17 @@ def write_record(file_path,str):
     f.write(str)
     f.close()
 
-def count_parameters(model,all=True):
+
+def count_parameters(model, all=True):
     # If all= Flase, we only return the trainable parameters; tested
     return sum(p.numel() for p in model.parameters() if p.requires_grad or all)
 
-def adjust_learning_rate(optimizer, epoch, lr,factor=0.1, step=30):
+
+def adjust_learning_rate(optimizer, epoch, lr, factor=0.1, step=30):
     """Sets the learning rate to the initial LR decayed by factor every step epochs"""
     lr = lr * (factor ** (epoch // step))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
-
 
 
 class ProgressMeter(object):
@@ -188,6 +194,7 @@ def save_checkpoint(state, is_best, netName):
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
+
     def __init__(self, name, fmt=':f'):
         self.name = name
         self.fmt = fmt
@@ -212,6 +219,7 @@ class AverageMeter(object):
 
 class Logger(object):
     '''Save training process to log file with simple plot function.'''
+
     def __init__(self, fpath, title=None, resume=False):
         self.file = None
         self.resume = resume
@@ -247,7 +255,6 @@ class Logger(object):
         self.file.write('\n')
         self.file.flush()
 
-
     def append(self, numbers):
         assert len(self.names) == len(numbers), 'Numbers do not match names'
         for index, num in enumerate(numbers):
@@ -260,6 +267,7 @@ class Logger(object):
     def close(self):
         if self.file is not None:
             self.file.close()
+
 
 def mkdir_p(path):
     '''make dir if not exist'''
