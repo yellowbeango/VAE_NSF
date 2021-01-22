@@ -12,7 +12,7 @@ import os
 import argparse
 import sys
 import models as models
-from utils import mkdir_p
+from utils import mkdir_p, get_mean_and_std
 from Datasets import Dataset_YH
 
 model_names = sorted(name for name in models.__dict__
@@ -50,3 +50,4 @@ print('==> Preparing data..')
 train_dataset = Dataset_YH(args.traindir, small=args.small)
 train_dataset = Dataset_YH(args.testdir, small=args.small)
 print('==> Next')
+get_mean_and_std(train_dataset)

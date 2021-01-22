@@ -22,6 +22,7 @@ def get_mean_and_std(dataset):
     std = torch.zeros(3)
     print('==> Computing mean and std..')
     for inputs, targets in dataloader:
+        print(f"inputs shape: {inputs.shape}")
         for i in range(3):
             mean[i] += inputs[:,i,:,:].mean()
             std[i] += inputs[:,i,:,:].std()
