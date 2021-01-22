@@ -18,14 +18,12 @@ __all__=["get_mean_and_std","progress_bar","format_time",
 def get_mean_and_std(dataset):
     '''Compute the mean and std value of dataset.'''
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=2)
-    mean = torch.zeros(3)
-    std = torch.zeros(3)
     print('==> Computing mean and std..')
+    mean, std = 0, 0
     for inputs, targets in dataloader:
         print(f"inputs shape: {inputs.shape}")
-        for i in range(3):
-            mean[i] += inputs[:,i,:,:].mean()
-            std[i] += inputs[:,i,:,:].std()
+        mean += inputs[:,0,:,:].mean()
+        std += inputs[:,0,:,:].std()
     mean.div_(len(dataset))
     std.div_(len(dataset))
     return mean, std

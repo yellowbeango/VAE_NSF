@@ -4,6 +4,8 @@ import os
 import numpy as np
 from torch.utils.data import Dataset
 
+
+# Image: [b,c,w,h] = [b,1,64,64]
 class Dataset_YH(Dataset):
     def __init__(self, file_dir, small=False, transform=None):
         self.file_dir = file_dir

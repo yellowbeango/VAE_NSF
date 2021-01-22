@@ -46,8 +46,11 @@ args.checkpoint = './checkpoints/%s-%s' % (
 if not os.path.isdir(args.checkpoint):
     mkdir_p(args.checkpoint)
 
-print('==> Preparing data..')
+print('==> Preparing training data..')
 train_dataset = Dataset_YH(args.traindir, small=args.small)
-train_dataset = Dataset_YH(args.testdir, small=args.small)
+test_dataset = Dataset_YH(args.testdir, small=args.small)
 print('==> Next')
-get_mean_and_std(train_dataset)
+train_mean, train_std = get_mean_and_std(train_dataset)
+test_mean, test_std = get_mean_and_std(test_dataset)
+print(f"train mean std: {train_mean} {train_std}")
+print(f"test  mean std: {test_mean} {test_std}")
