@@ -128,7 +128,7 @@ def train(net, trainloader, optimizer):
         inputs = inputs.to(device)
         optimizer.zero_grad()
         result = net(inputs)
-        loss_dict = net.module.loss_function(result, M_N=M_N) # loss, Reconstruction_Loss, KLD
+        loss_dict = net.module.loss_function(*result, M_N=M_N) # loss, Reconstruction_Loss, KLD
         loss = loss_dict['loss']
         loss.backward()
         optimizer.step()
