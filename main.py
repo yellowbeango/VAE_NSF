@@ -51,22 +51,25 @@ args.checkpoint = './checkpoints/%s-%s' % (
 if not os.path.isdir(args.checkpoint):
     mkdir_p(args.checkpoint)
 
+SetRange = transforms.Lambda(lambda X: 2 * X - 1.)
+transform = transforms.Compose([
+    # transforms.RandomHorizontalFlip(),
+    transforms.ToTensor(),
+    SetRange  # rescale to [-1,1] considering the tanh activation
+])
 print('==> Preparing training data..')
-train_dataset = Dataset_YH(args.traindir, small=args.small)
-M_N = args.bs/train_dataset.len  # for the loss
+train_dataset = Dataset_YH(args.traindir, small=args.small, transform=transform)
+M_N = args.bs / train_dataset.len  # for the loss
 print('==> Preparing testing data..')
-test_dataset = Dataset_YH(args.testdir, small=args.small)
+test_dataset = Dataset_YH(args.testdir, small=args.small, transform=transform)
+
 # train_mean, train_std = get_mean_and_std(train_dataset)
 # test_mean, test_std = get_mean_and_std(test_dataset)
 # print(f"train mean std: {train_mean} {train_std}")
 # print(f"test  mean std: {test_mean} {test_std}")
 # train mean std: 0.27979007363319397 0.44508227705955505
 # test  mean std: 0.2811497151851654 0.44574955105781555
-transform_train = transforms.Compose([
-    # transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize((0.2798,), (0.4451,)),
-])
+
 # data loader
 trainloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=4)
 testloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.bs, shuffle=False, num_workers=4)
@@ -105,7 +108,6 @@ def main():
         logger = Logger(os.path.join(args.checkpoint, 'log.txt'))
         logger.set_names(['Epoch', 'LR', 'Train Loss', 'Recons Loss', 'KLD Loss'])
 
-
     if not args.evaluate:
         # training
         print("==> start training..")
@@ -115,7 +117,7 @@ def main():
             save_model(net, optimizer, epoch, os.path.join(args.checkpoint, 'checkpoint.pth'))
             if train_out["train_loss"] < best_loss:
                 save_model(net, optimizer, epoch, os.path.join(args.checkpoint, 'checkpoint_best.pth'),
-                           loss = train_out["train_loss"])
+                           loss=train_out["train_loss"])
                 best_loss = train_out["train_loss"]
             logger.append([epoch + 1, scheduler.get_last_lr()[-1],
                            train_out["train_loss"], train_out["recons_loss"], train_out["kld_loss"]])
@@ -137,7 +139,7 @@ def train(net, trainloader, optimizer):
         inputs = inputs.to(device)
         optimizer.zero_grad()
         result = net(inputs)
-        loss_dict = net.module.loss_function(*result, M_N=M_N) # loss, Reconstruction_Loss, KLD
+        loss_dict = net.module.loss_function(*result, M_N=M_N)  # loss, Reconstruction_Loss, KLD
         loss = loss_dict['loss']
         loss.backward()
         optimizer.step()
@@ -162,15 +164,10 @@ def sample_images(net, valloader, name="val"):
         img, spe = next(dataloader_iterator)
         img = img.to(device)
         recons = net.module.generate(img)
-        result = torch.cat([img,recons],dim=0)
-        print(f"image: {result[0]}")
-        print(f"min: {img.min()} max: {img.max()}")
-        print(f"recon: {result[-1]}")
-        # result = result * 0.4451 + 0.2798  # reconstruct from normalized data: *std+mean
+        result = torch.cat([img, recons], dim=0)
         save_binary_img(result.data,
                         os.path.join(args.checkpoint, f"{name}.png"),
                         nrow=args.val_num)
-
 
 
 if __name__ == '__main__':
