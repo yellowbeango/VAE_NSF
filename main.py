@@ -112,3 +112,11 @@ def main():
         # training
         for epoch in range(start_epoch, args.es):
             print('\nStage_1 Epoch: %d | Learning rate: %f ' % (epoch + 1, scheduler.get_lr()))
+
+
+
+
+
+
+if __name__ == '__main__':
+    main()
