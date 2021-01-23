@@ -111,7 +111,8 @@ def main():
     if not args.evaluate:
         # training
         for epoch in range(start_epoch, args.es):
-            print('\nStage_1 Epoch: %d | Learning rate: %f ' % (epoch + 1, scheduler.get_last_lr()))
+            print(f"Stage_1 Epoch: {epoch + 1} | Learning rate: {scheduler.get_last_lr()}")
+            # print('\nStage_1 Epoch: %d | Learning rate: %f ' % (epoch + 1, scheduler.get_last_lr()))
 
 
 
