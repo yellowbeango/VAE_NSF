@@ -70,6 +70,7 @@ transform_train = transforms.Compose([
 # data loader
 trainloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=4)
 testloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.bs, shuffle=False, num_workers=4)
+valloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.val_num, shuffle=False, num_workers=4)
 
 
 def main():
@@ -123,7 +124,7 @@ def main():
         print(f"\n==> Finish training..\n")
 
     print("===> start evaluating ...")
-    sample_images(net, test_dataset, name="test_reconstruct")
+    sample_images(net, valloader, name="test_reconstruct")
 
 
 def train(net, trainloader, optimizer):
@@ -155,14 +156,14 @@ def train(net, trainloader, optimizer):
     }
 
 
-def sample_images(net, test_dataset, name="val"):
-    rand_index = np.random.randint(0,test_dataset.__len__(), size=args.val_num)
+def sample_images(net, valloader, name="val"):
+    dataloader_iterator = iter(valloader)
     with torch.no_grad():
-        img, spe = test_dataset.__getitem__(rand_index)
+        img, spe = next(dataloader_iterator)
         img = img.to(device)
         recons = net.module.generate(img)
-        recons = recons*0.4451 + 0.2798  # reconstruct from normalized data: *std+mean
         result = torch.cat([img,recons],dim=0)
+        result = result * 0.4451 + 0.2798  # reconstruct from normalized data: *std+mean
         save_binary_img(result.data,
                         os.path.join(args.checkpoint, f"{name}.png"),
                         nrow=args.val_num)
