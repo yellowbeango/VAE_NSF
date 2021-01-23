@@ -12,7 +12,7 @@ import os
 import argparse
 import sys
 import models as models
-from utils import mkdir_p, get_mean_and_std, Logger, progress_bar, save_model
+from utils import mkdir_p, get_mean_and_std, Logger, progress_bar, save_model, save_binary_img
 from Datasets import Dataset_YH
 
 model_names = sorted(name for name in models.__dict__
@@ -41,6 +41,8 @@ parser.add_argument('--wd', default=0.0, type=float, help='weight decay')
 parser.add_argument('--scheduler_gamma', default=0.95, type=float, help='weight decay')
 
 parser.add_argument('--evaluate', action='store_true', help='Evaluate model, ensuring the resume path is given')
+parser.add_argument('--val_num', default=8, type=int,
+                    help=' the number of validate images, also nrow for saving images')
 
 args = parser.parse_args()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -68,6 +70,7 @@ transform_train = transforms.Compose([
 # data loader
 trainloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=4)
 testloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.bs, shuffle=False, num_workers=4)
+valloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.val_num, shuffle=False, num_workers=4)
 
 
 def main():
@@ -121,7 +124,7 @@ def main():
         print(f"\n==> Finish training..\n")
 
     print("===> start evaluating ...")
-
+    sample(net, valloader)
 
 
 def train(net, trainloader, optimizer):
@@ -151,6 +154,14 @@ def train(net, trainloader, optimizer):
         "recons_loss": recons_loss / (batch_idx + 1),
         "kld_loss": kld_loss / (batch_idx + 1)
     }
+
+
+def sample(net, valloader):
+    rand_index = np.random.randint(0,valloader.__len__())
+    with torch.no_grad():
+        img, spe = valloader.__getitem__(rand_index)
+        save_binary_img(img,os.path.join(args.checkpoint,f"val{rand_index}.png"))
+
 
 
 if __name__ == '__main__':

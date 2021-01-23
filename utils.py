@@ -11,6 +11,7 @@ import shutil
 import torch
 import torch.nn as nn
 import torch.nn.init as init
+import torchvision.utils as vutils
 
 __all__ = ["get_mean_and_std", "progress_bar", "format_time",
            'adjust_learning_rate', 'AverageMeter', 'Logger', 'mkdir_p']
@@ -282,3 +283,10 @@ def save_model(net, optimizer, epoch, path, **kwargs):
     for key, value in kwargs.items():
         state[key] = value
     torch.save(state, path)
+
+
+def save_binary_img(tensor, file_path="./test_img.png"):
+    # tensor [b,1,w,h]
+    predicted = torch.sigmoid(tensor) > 0.5
+    vutils.save_image(predicted.float(), file_path)
+
