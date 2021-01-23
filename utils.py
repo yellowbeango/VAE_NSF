@@ -185,13 +185,6 @@ def accuracy(output, target, topk=(1,)):
         return res
 
 
-def save_checkpoint(state, is_best, netName):
-    torch.save(state, './checkpoint/ckpt_imagenet32_' + netName + '_last.t7')
-    if is_best:
-        shutil.copyfile('./checkpoint/ckpt_imagenet32_' + netName + '_last.t7',
-                        './checkpoint/ckpt_imagenet32_' + netName + '_best.t7')
-
-
 class AverageMeter(object):
     """Computes and stores the average and current value"""
 
@@ -278,3 +271,14 @@ def mkdir_p(path):
             pass
         else:
             raise
+
+
+def save_model(net, optimizer, epoch, path, **kwargs):
+    state = {
+        'net': net.state_dict(),
+        'optimizer': optimizer.state_dict(),
+        'epoch': epoch
+    }
+    for key, value in kwargs.items():
+        state[key] = value
+    torch.save(state, path)

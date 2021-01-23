@@ -12,7 +12,7 @@ import os
 import argparse
 import sys
 import models as models
-from utils import mkdir_p, get_mean_and_std, Logger
+from utils import mkdir_p, get_mean_and_std, Logger, progress_bar, save_model
 from Datasets import Dataset_YH
 
 model_names = sorted(name for name in models.__dict__
@@ -85,12 +85,8 @@ def main():
         net = torch.nn.DataParallel(net)
         cudnn.benchmark = True
 
-    if args.resume:
-        # Load checkpoint.
-        print('==> Resuming from checkpoint..')
-        checkpoint = torch.load(args.resume)
-        net.load_state_dict(checkpoint['net'])
-        start_epoch = checkpoint['epoch']
+    optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.wd)
+    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=args.scheduler_gamma)
 
     if args.resume:
         # Load checkpoint.
@@ -98,24 +94,57 @@ def main():
             print('==> Resuming from checkpoint..')
             checkpoint = torch.load(args.resume)
             net.load_state_dict(checkpoint['net'])
+            optimizer.load_state_dict(checkpoint['optimizer'])
             logger = Logger(os.path.join(args.checkpoint, 'log.txt'), resume=True)
         else:
-            print("=> no checkpoint found at '{}'".format(args.resume))
+            print("==> no checkpoint found at '{}'".format(args.resume))
     else:
         logger = Logger(os.path.join(args.checkpoint, 'log.txt'))
-        logger.set_names(['Epoch', 'Train Loss'])
+        logger.set_names(['Epoch', 'LR', 'Train Loss', 'Recons Loss', 'KLD Loss'])
 
-    optimizer = optim.Adam(net.parameters(), lr=args.lr,  weight_decay=args.wd)
-    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=args.scheduler_gamma)
 
     if not args.evaluate:
         # training
         for epoch in range(start_epoch, args.es):
             print('\nStage_1 Epoch: %d | Learning rate: %f ' % (epoch + 1, scheduler.get_last_lr()[-1]))
+            train_out = train(net, trainloader, optimizer)  # {train_loss, recons_loss, kld_loss}
+            save_model(net, epoch, os.path.join(args.checkpoint, 'checkpoint.pth'))
+            logger.append([epoch + 1, scheduler.get_last_lr()[-1],
+                           train_out["train_loss"], train_out["recons_loss"], train_out["kld_loss"]])
             scheduler.step()
+        logger.close()
+        print(f"\n==> Finish training..\n")
+
+    print("===> Evaluating （TODO） ...")
 
 
+def train(net, trainloader, optimizer):
+    net.train()
+    train_loss = 0
+    recons_loss = 0
+    kld_loss = 0
 
+    for batch_idx, (inputs, targets) in enumerate(trainloader):
+        inputs = inputs.to(device)
+        optimizer.zero_grad()
+        result = net(inputs)
+        loss_dict = net.loss_function(result, M_N=M_N) # loss, Reconstruction_Loss, KLD
+        loss = loss_dict['loss']
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item()
+        recons_loss += (loss_dict['Reconstruction_Loss']).item()
+        kld_loss += (loss_dict['KLD']).item()
+
+        progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Rec_Loss: %.3f | KLD_Loss: %.3f'
+                     % (train_loss / (batch_idx + 1), recons_loss / (batch_idx + 1), kld_loss / (batch_idx + 1)))
+
+    return {
+        "train_loss": train_loss / (batch_idx + 1),
+        "recons_loss": recons_loss / (batch_idx + 1),
+        "kld_loss": kld_loss / (batch_idx + 1)
+    }
 
 
 if __name__ == '__main__':
