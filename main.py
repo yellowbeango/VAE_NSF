@@ -70,7 +70,6 @@ transform_train = transforms.Compose([
 # data loader
 trainloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=4)
 testloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.bs, shuffle=False, num_workers=4)
-valloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.val_num, shuffle=False, num_workers=4)
 
 
 def main():
@@ -156,11 +155,11 @@ def train(net, trainloader, optimizer):
     }
 
 
-def sample(net, valloader):
-    rand_index = np.random.randint(0,valloader.__len__())
+def sample(net, test_dataset):
+    rand_index = np.random.randint(0,test_dataset.__len__(), size=args.val_num)
     with torch.no_grad():
-        img, spe = valloader.__getitem__(rand_index)
-        save_binary_img(img,os.path.join(args.checkpoint,f"val{rand_index}.png"))
+        img, spe = test_dataset.__getitem__(rand_index)
+        save_binary_img(img,os.path.join(args.checkpoint, "val.png"))
 
 
 
