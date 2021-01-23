@@ -12,7 +12,7 @@ import os
 import argparse
 import sys
 import models as models
-from utils import mkdir_p, get_mean_and_std
+from utils import mkdir_p, get_mean_and_std, Logger
 from Datasets import Dataset_YH
 
 model_names = sorted(name for name in models.__dict__
@@ -32,12 +32,15 @@ parser.add_argument('--testdir', default='/home/UNT/jg0737/Desktop/NSFdata/test_
                     help='path to testing set')
 
 # Parameters for  training
-# parser.add_argument('--resume', default='', type=str, metavar='PATH', help='path to latest checkpoint')
+parser.add_argument('--resume', default='', type=str, metavar='PATH', help='path to latest checkpoint')
 parser.add_argument('--small', action='store_true', help='Showcase on small set')
 parser.add_argument('--es', default=50, type=int, help='epoch size')
 parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
 parser.add_argument('--bs', default=144, type=int, help='batch size, better to have a square number')
 parser.add_argument('--wd', default=0.0, type=float, help='weight decay')
+parser.add_argument('--scheduler_gamma', default=0.95, type=float, help='weight decay')
+
+parser.add_argument('--evaluate', action='store_true', help='Evaluate model, ensuring the resume path is given')
 
 args = parser.parse_args()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -48,8 +51,7 @@ if not os.path.isdir(args.checkpoint):
 
 print('==> Preparing training data..')
 train_dataset = Dataset_YH(args.traindir, small=args.small)
-M_N = args.bs/train_dataset.len
-print(f"M_N is {M_N}")
+M_N = args.bs/train_dataset.len  # for the loss
 print('==> Preparing testing data..')
 test_dataset = Dataset_YH(args.testdir, small=args.small)
 # train_mean, train_std = get_mean_and_std(train_dataset)
@@ -68,4 +70,45 @@ trainloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shu
 testloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.bs, shuffle=False, num_workers=4)
 
 
+def main():
+    print("==> start training..")
+    start_epoch = 0
 
+    # Model
+    print('==> Building model..')
+    net = models.__dict__[args.model](in_channels=1, latent_dim=args.latent_dim)
+    net = net.to(device)
+
+    if device == 'cuda':
+        # Considering the data scale and model, it is unnecessary to use DistributedDataParallel
+        # which could speed up the training and inference compared to DataParallel
+        net = torch.nn.DataParallel(net)
+        cudnn.benchmark = True
+
+    if args.resume:
+        # Load checkpoint.
+        print('==> Resuming from checkpoint..')
+        checkpoint = torch.load(args.resume)
+        net.load_state_dict(checkpoint['net'])
+        start_epoch = checkpoint['epoch']
+
+    if args.resume:
+        # Load checkpoint.
+        if os.path.isfile(args.resume):
+            print('==> Resuming from checkpoint..')
+            checkpoint = torch.load(args.resume)
+            net.load_state_dict(checkpoint['net'])
+            logger = Logger(os.path.join(args.checkpoint, 'log.txt'), resume=True)
+        else:
+            print("=> no checkpoint found at '{}'".format(args.resume))
+    else:
+        logger = Logger(os.path.join(args.checkpoint, 'log.txt'))
+        logger.set_names(['Epoch', 'Train Loss'])
+
+    optimizer = optim.Adam(net.parameters(), lr=args.lr,  weight_decay=args.wd)
+    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=args.scheduler_gamma)
+
+    if not args.evaluate:
+        # training
+        for epoch in range(start_epoch, args.es):
+            print('\nStage_1 Epoch: %d | Learning rate: %f ' % (epoch + 1, scheduler.get_lr()))
