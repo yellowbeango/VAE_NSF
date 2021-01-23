@@ -161,7 +161,7 @@ def sample_images(net, test_dataset, name="val"):
         img, spe = test_dataset.__getitem__(rand_index)
         img = img.to(device)
         recons = net.module.generate(img)
-        recons = recons/0.4451 + 0.2798  # reconstruct from normalized data: /std+mean
+        recons = recons*0.4451 + 0.2798  # reconstruct from normalized data: /std+mean
         result = torch.cat([img,recons],dim=0)
         save_binary_img(result.data,
                         os.path.join(args.checkpoint, f"{name}.png"),
