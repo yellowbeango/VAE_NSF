@@ -14,7 +14,7 @@ First, we reconstruct images using pretrained vanilla VAE models. Top: original 
 
 Next, we randomly sample latent features following N(0,1), and decode the latent feature, as shown above.
 
-Here is the [[training log]](https://northeastern-my.sharepoint.com/:u:/g/personal/ma_xu1_northeastern_edu/EcLI3zEbJkpFjh4SK5ZZpTUB8Wk4Wm8gbzZT_P_xd7z7AQ?e=eujEdu) 
+Here is the [[training log]](https://northeastern-my.sharepoint.com/:t:/g/personal/ma_xu1_northeastern_edu/EQ_B8zFYR7lDlXjtok7uqR0Bh30UwIfiId95LtPqaCZtuw?e=fLIrYO) 
 and [[pretrained model]](https://northeastern-my.sharepoint.com/:u:/g/personal/ma_xu1_northeastern_edu/EcLI3zEbJkpFjh4SK5ZZpTUB8Wk4Wm8gbzZT_P_xd7z7AQ?e=n51uFM).
 
 Download limits to NEU user.
