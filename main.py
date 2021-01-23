@@ -163,6 +163,8 @@ def sample_images(net, valloader, name="val"):
         img = img.to(device)
         recons = net.module.generate(img)
         result = torch.cat([img,recons],dim=0)
+        print(f"image: {result[0]}")
+        print(f"recon: {result[-1]}")
         result = result * 0.4451 + 0.2798  # reconstruct from normalized data: *std+mean
         save_binary_img(result.data,
                         os.path.join(args.checkpoint, f"{name}.png"),
