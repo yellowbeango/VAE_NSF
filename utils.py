@@ -285,8 +285,8 @@ def save_model(net, optimizer, epoch, path, **kwargs):
     torch.save(state, path)
 
 
-def save_binary_img(tensor, file_path="./test_img.png"):
+def save_binary_img(tensor, file_path="./val.png", nrow=8):
     # tensor [b,1,w,h]
     predicted = torch.sigmoid(tensor) > 0.5
-    vutils.save_image(predicted.float(), file_path)
+    vutils.save_image(predicted.float(), file_path,nrow=nrow)
 
