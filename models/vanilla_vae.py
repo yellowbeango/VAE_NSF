@@ -145,9 +145,7 @@ class VanillaVAE(BaseVAE):
         loss = recons_loss + kld_weight * kld_loss
         return {'loss': loss, 'Reconstruction_Loss': recons_loss, 'KLD': -kld_loss}
 
-    def sample(self,
-               num_samples: int,
-               current_device: int, **kwargs) -> Tensor:
+    def sample(self, z, **kwargs) -> Tensor:
         """
         Samples from the latent space and return the corresponding
         image space map.
@@ -155,10 +153,10 @@ class VanillaVAE(BaseVAE):
         :param current_device: (Int) Device to run the model
         :return: (Tensor)
         """
-        z = torch.randn(num_samples,
-                        self.latent_dim)
-
-        z = z.to(current_device)
+        # z = torch.randn(num_samples,
+        #                 self.latent_dim)
+        #
+        # z = z.to(current_device)
 
         samples = self.decode(z)
         return samples

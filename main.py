@@ -126,7 +126,8 @@ def main():
         print(f"\n==> Finish training..\n")
 
     print("===> start evaluating ...")
-    sample_images(net, valloader, name="test_reconstruct")
+    generate_images(net, valloader, name="test_reconstruct")
+    sample_images(net, name="test_randsample")
 
 
 def train(net, trainloader, optimizer):
@@ -158,7 +159,7 @@ def train(net, trainloader, optimizer):
     }
 
 
-def sample_images(net, valloader, name="val"):
+def generate_images(net, valloader, name="val"):
     dataloader_iterator = iter(valloader)
     with torch.no_grad():
         img, spe = next(dataloader_iterator)
@@ -166,6 +167,16 @@ def sample_images(net, valloader, name="val"):
         recons = net.module.generate(img)
         result = torch.cat([img, recons], dim=0)
         save_binary_img(result.data,
+                        os.path.join(args.checkpoint, f"{name}.png"),
+                        nrow=args.val_num)
+
+
+def sample_images(net, name="val"):
+    with torch.no_grad():
+        z = torch.randn(args.val_num, args.latent_dim)
+        z = z.to(device)
+        sampled = net.module.sample(z)
+        save_binary_img(sampled.data,
                         os.path.join(args.checkpoint, f"{name}.png"),
                         nrow=args.val_num)
 
