@@ -108,7 +108,7 @@ def main():
         for epoch in range(start_epoch, args.es):
             print('\nStage_1 Epoch: %d | Learning rate: %f ' % (epoch + 1, scheduler.get_last_lr()[-1]))
             train_out = train(net, trainloader, optimizer)  # {train_loss, recons_loss, kld_loss}
-            save_model(net, epoch, os.path.join(args.checkpoint, 'checkpoint.pth'))
+            save_model(net, optimizer, epoch, os.path.join(args.checkpoint, 'checkpoint.pth'))
             logger.append([epoch + 1, scheduler.get_last_lr()[-1],
                            train_out["train_loss"], train_out["recons_loss"], train_out["kld_loss"]])
             scheduler.step()
