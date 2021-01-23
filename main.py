@@ -123,7 +123,7 @@ def main():
         print(f"\n==> Finish training..\n")
 
     print("===> start evaluating ...")
-    sample(net, valloader)
+    sample(net, test_dataset)
 
 
 def train(net, trainloader, optimizer):
