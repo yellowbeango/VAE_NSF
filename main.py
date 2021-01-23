@@ -54,7 +54,7 @@ if not os.path.isdir(args.checkpoint):
 SetRange = transforms.Lambda(lambda X: 2 * X - 1.)
 transform = transforms.Compose([
     # transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
+    # transforms.ToTensor(),
     SetRange  # rescale to [-1,1] considering the tanh activation
 ])
 print('==> Preparing training data..')
