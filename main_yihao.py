@@ -109,7 +109,6 @@ def train(net, trainloader, optimizer):
 
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         inputs = inputs.to(device)
-        print(f"max: {inputs.max()} min: {inputs.min()}")
         optimizer.zero_grad()
         result = net(inputs)
         loss_dict = net.module.loss_function(*result, M_N=M_N)  # loss, Reconstruction_Loss, KLD
