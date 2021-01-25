@@ -109,6 +109,7 @@ def train(net, trainloader, optimizer):
 
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         inputs = inputs.to(device)
+        print(f"max: {inputs.max()} min: {inputs.min()}")
         optimizer.zero_grad()
         result = net(inputs)
         loss_dict = net.module.loss_function(*result, M_N=M_N)  # loss, Reconstruction_Loss, KLD
@@ -167,10 +168,10 @@ if __name__ == '__main__':
         SetRange  # rescale to [-1,1] considering the tanh activation
     ])
     print('==> Preparing training data..')
-    train_dataset = Dataset_YH(args.traindir, small=args.small)
+    train_dataset = Dataset_YH(args.traindir, small=args.small, transform=transform)
     M_N = args.bs / train_dataset.len  # for the loss
     print('==> Preparing testing data..')
-    test_dataset = Dataset_YH(args.testdir, small=args.small)
+    test_dataset = Dataset_YH(args.testdir, small=args.small,  transform=transform)
 
     # train_mean, train_std = get_mean_and_std(train_dataset)
     # test_mean, test_std = get_mean_and_std(test_dataset)
