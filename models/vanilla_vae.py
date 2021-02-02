@@ -10,12 +10,14 @@ Tensor = TypeVar('torch.tensor')
 
 __all__ = ['VanillaVAE']
 
+
 class VanillaVAE(BaseVAE):
 
     def __init__(self,
                  in_channels: int,
                  latent_dim: int,
                  hidden_dims: List = None,
+                 spec_dim: int = 366,
                  **kwargs) -> None:
         super(VanillaVAE, self).__init__()
 
@@ -37,13 +39,13 @@ class VanillaVAE(BaseVAE):
             in_channels = h_dim
 
         self.encoder = nn.Sequential(*modules)
-        self.fc_mu = nn.Linear(hidden_dims[-1] * 4, latent_dim)
-        self.fc_var = nn.Linear(hidden_dims[-1] * 4, latent_dim)
+        self.fc_mu = nn.Linear(hidden_dims[-1] * 4+spec_dim, latent_dim)
+        self.fc_var = nn.Linear(hidden_dims[-1] * 4+spec_dim, latent_dim)
 
         # Build Decoder
         modules = []
 
-        self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1] * 4)
+        self.decoder_input = nn.Linear(latent_dim+spec_dim, hidden_dims[-1] * 4)
 
         hidden_dims.reverse()
 
@@ -75,7 +77,7 @@ class VanillaVAE(BaseVAE):
                       kernel_size=3, padding=1),
             nn.Tanh())
 
-    def encode(self, input: Tensor) -> List[Tensor]:
+    def encode(self, input: Tensor, target: Tensor) -> List[Tensor]:
         """
         Encodes the input by passing through the encoder network
         and returns the latent codes.
@@ -84,6 +86,8 @@ class VanillaVAE(BaseVAE):
         """
         result = self.encoder(input)
         result = torch.flatten(result, start_dim=1)
+        target = torch.flatten(target, start_dim=1)
+        result = torch.cat((result, target), dim=1)
 
         # Split the result into mu and var components
         # of the latent Gaussian distribution
@@ -92,14 +96,17 @@ class VanillaVAE(BaseVAE):
 
         return [mu, log_var]
 
-    def decode(self, z: Tensor) -> Tensor:
+    def decode(self, z:Tensor, target:Tensor) -> Tensor:
         """
         Maps the given latent codes
+
         onto the image space.
         :param z: (Tensor) [B x D]
         :return: (Tensor) [B x C x H x W]
         """
-        result = self.decoder_input(z)
+        target = torch.flatten(target, start_dim=1)
+        result = torch.cat((z, target), dim=1)
+        result = self.decoder_input(result)
         result = result.view(-1, 512, 2, 2)
         result = self.decoder(result)
         result = self.final_layer(result)
@@ -117,14 +124,12 @@ class VanillaVAE(BaseVAE):
         eps = torch.randn_like(std)
         return eps * std + mu
 
-    def forward(self, input: Tensor, **kwargs) -> List[Tensor]:
-        mu, log_var = self.encode(input)
+    def forward(self, input: Tensor, target: Tensor, **kwargs) -> List[Tensor]:
+        mu, log_var = self.encode(input, target)
         z = self.reparameterize(mu, log_var)
-        return [self.decode(z), input, mu, log_var]
+        return [self.decode(z, target), input, mu, log_var]
 
-    def loss_function(self,
-                      *args,
-                      **kwargs) -> dict:
+    def loss_function(self, *args, **kwargs) -> dict:
         """
         Computes the VAE loss function.
         KL(N(\mu, \sigma), N(0, 1)) = \log \frac{1}{\sigma} + \frac{\sigma^2 + \mu^2}{2} - \frac{1}{2}
@@ -145,7 +150,7 @@ class VanillaVAE(BaseVAE):
         loss = recons_loss + kld_weight * kld_loss
         return {'loss': loss, 'Reconstruction_Loss': recons_loss, 'KLD': -kld_loss}
 
-    def sample(self, z, **kwargs) -> Tensor:
+    def sample(self, z: Tensor, target: Tensor, **kwargs) -> Tensor:
         """
         Samples from the latent space and return the corresponding
         image space map.
@@ -158,14 +163,14 @@ class VanillaVAE(BaseVAE):
         #
         # z = z.to(current_device)
 
-        samples = self.decode(z)
+        samples = self.decode(z, target)
         return samples
 
-    def generate(self, x: Tensor, **kwargs) -> Tensor:
+    def generate(self, input: Tensor, target: Tensor, **kwargs) -> Tensor:
         """
         Given an input image x, returns the reconstructed image
         :param x: (Tensor) [B x C x H x W]
         :return: (Tensor) [B x C x H x W]
         """
 
-        return self.forward(x)[0]
+        return self.forward(input, target)[0]
