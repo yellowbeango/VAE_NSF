@@ -8,6 +8,8 @@ import sys
 import time
 import errno
 import shutil
+
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.init as init
@@ -16,8 +18,10 @@ import torchvision.utils as vutils
 __all__ = ["get_mean_and_std", "progress_bar", "format_time",
            'adjust_learning_rate', 'AverageMeter', 'Logger', 'mkdir_p']
 
+
 def merge(x):
     return 2 * x - 1.
+
 
 def get_mean_and_std(dataset):
     '''Compute the mean and std value of dataset.'''
@@ -265,6 +269,12 @@ class Logger(object):
             self.file.close()
 
 
+def convert_ypred(y_pred):
+    # convert the ypred: [-1, 183, 3] to ypred: [-1, 183, 2]. (cos, sin->phi in [0,1])
+    y_pred = torch.stack((y_pred[:, :, 0], (torch.atan2(y_pred[:, :, 2], y_pred[:, :, 1]) + np.pi) / 2 / np.pi), axis=2)
+    return y_pred
+
+
 def mkdir_p(path):
     '''make dir if not exist'''
     try:
@@ -288,7 +298,35 @@ def save_model(net, optimizer, epoch, path, **kwargs):
 
 
 def save_binary_img(tensor, file_path="./val.png", nrow=8):
-    # tensor [b,1,w,h]
-    predicted = torch.sigmoid(tensor) > 0.5
-    vutils.save_image(predicted.float(), file_path,nrow=nrow)
+    predicted = tensor > 0
+    vutils.save_image(predicted.float(), file_path, nrow=nrow)
 
+
+def imbinarize(tensor):
+    tensor = tensor > 0
+    return tensor.float()
+
+
+def amp_loss(y_pred, y_true):
+    """
+    define the loss for forward prediction, model_out and target are tensors with the shape batch_size*spec_size_9
+    """
+    At = y_true[:, :, 0]
+    Ap = y_pred[:, :, 0]
+    loss_amp = torch.mean((At - Ap) ** 2)
+    return loss_amp
+
+
+def phase_loss(y_pred, y_true):
+    """
+    define the loss for forward prediction, model_out and target are tensors with the shape batch_size*spec_size_9
+    """
+    Pt = y_true[:, :, 1]
+    Pp = y_pred[:, :, 1]
+    dP = torch.abs(Pt - Pp)
+    loss_phi = torch.mean(torch.min(dP, 1 - dP) ** 2)
+    return loss_phi
+
+
+def forward_loss(y_pred, y_true):
+    return (amp_loss(y_pred, y_true) + phase_loss(y_pred, y_true))/2
