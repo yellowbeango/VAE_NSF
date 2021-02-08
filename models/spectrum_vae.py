@@ -202,7 +202,8 @@ class SpectrumVAE(BaseVAE):
         predict_spectrum_loss = (targets - predict_spectrum).norm(dim=-1).mean()
         generate_spectrum_loss = (targets - generate_spectrum).norm(dim=-1).mean()
 
-        loss = recons_loss + kld_weight * kld_loss + spectrum_weight * (predict_spectrum_loss + generate_spectrum_loss)
+        loss = recons_loss + kld_weight * kld_loss + spectrum_weight
+        # loss = recons_loss + kld_weight * kld_loss + spectrum_weight * (predict_spectrum_loss + generate_spectrum_loss)
         return {
             'loss': loss,
             'Reconstruction_Loss': recons_loss,
