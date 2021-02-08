@@ -168,7 +168,7 @@ class SpectrumVAE(BaseVAE):
         }
 
     def loss_function(self,
-                      *args,
+                      args,
                       **kwargs) -> dict:
         """
         Computes the VAE loss function.

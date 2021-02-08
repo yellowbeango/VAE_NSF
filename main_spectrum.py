@@ -145,8 +145,8 @@ def train(net, trainloader, optimizer):
         inputs = inputs.to(device)
         targets = targets.to(device)
         optimizer.zero_grad()
-        result = net(inputs)
-        loss_dict = net.module.loss_function(*result, targets=targets, M_N=M_N,
+        result = net(inputs, targets)
+        loss_dict = net.module.loss_function(result, targets=targets, M_N=M_N,
                                              spectrum_weight=args.spectrum_weight)  # loss, Reconstruction_Loss, KLD
         loss = loss_dict['loss']
         loss.backward()
