@@ -69,15 +69,15 @@ class SpectrumVAE(BaseVAE):
             nn.Linear(1024, latent_dim),
         )
 
-        self.spectrum_embed = nn.Sequential(
-            nn.Linear(self.points * 2, 1024),
-            nn.PReLU(),
-            nn.Linear(1024, 1024),
-            nn.PReLU(),
-            nn.Linear(1024, 1024),
-            nn.PReLU(),
-            nn.Linear(1024, self.latent_dim)
-        )
+        # self.spectrum_embed = nn.Sequential(
+        #     nn.Linear(self.points * 2, 1024),
+        #     nn.PReLU(),
+        #     nn.Linear(1024, 1024),
+        #     nn.PReLU(),
+        #     nn.Linear(1024, 1024),
+        #     nn.PReLU(),
+        #     nn.Linear(1024, self.latent_dim)
+        # )
 
         # Build Decoder
         modules = []
@@ -224,13 +224,6 @@ class SpectrumVAE(BaseVAE):
         #
         # z = z.to(current_device)
 
-        if target != None:
-            eps = torch.randn_like(std)
-        else:
-            eps = target.reshape(-1, self.points * 2)
-            eps = self.spectrum_embed(eps)
-            eps = eps + torch.randn_like(eps)  # add some noise, providing diversity
-            eps = (eps - eps.mean()) / (eps.std())  # to N(0,1)
         samples = self.decode(z)
         _, _, generate_spectrum = self.encode(samples)
         return {
