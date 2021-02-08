@@ -159,7 +159,7 @@ def train(net, trainloader, optimizer):
         generate_spectrum_loss += (loss_dict["generate_spectrum_loss"]).item()
 
         progress_bar(batch_idx, len(trainloader),
-                     'Loss: %.3f | Rec: %.3f | KLD: %.3f | P_spec: %.3f| G_spec: %.3f'
+                     'All:%.3f |Rec:%.3f |KLD:%.3f |Pre:%.3f |Gen:%.3f'
                      % (train_loss / (batch_idx + 1),
                         recons_loss / (batch_idx + 1),
                         kld_loss / (batch_idx + 1),
