@@ -22,7 +22,7 @@ model_names = sorted(name for name in models.__dict__
 parser = argparse.ArgumentParser(description='VAE training for NSF project')
 
 # General MODEL parameters
-parser.add_argument('--model', default='VanillaVAE', choices=model_names, type=str, help='choosing network')
+parser.add_argument('--model', default='SpectrumVAE', choices=model_names, type=str, help='choosing network')
 parser.add_argument('--latent_dim', default=128, type=int)
 
 # Parameters for  dataset
