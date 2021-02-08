@@ -12,12 +12,20 @@ import torch
 import torch.nn as nn
 import torch.nn.init as init
 import torchvision.utils as vutils
+from typing import List
+import numpy as np
+import matplotlib
+
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 __all__ = ["get_mean_and_std", "progress_bar", "format_time",
            'adjust_learning_rate', 'AverageMeter', 'Logger', 'mkdir_p']
 
+
 def merge(x):
     return 2 * x - 1.
+
 
 def get_mean_and_std(dataset):
     '''Compute the mean and std value of dataset.'''
@@ -290,5 +298,48 @@ def save_model(net, optimizer, epoch, path, **kwargs):
 def save_binary_img(tensor, file_path="./val.png", nrow=8):
     # tensor [b,1,w,h]
     predicted = torch.sigmoid(tensor) > 0.5
-    vutils.save_image(predicted.float(), file_path,nrow=nrow)
+    vutils.save_image(predicted.float(), file_path, nrow=nrow)
 
+
+def plot_spectrum(spectrums: List[torch.Tensor], labels: List[str], save_path: str = "./spectrum.png"):
+    assert len(spectrums) > 1
+    assert len(spectrums) == len(labels)
+
+    colors = ['C0', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9']
+    markers = ['o', 'v', 's', '*', 'p', '+', 'x']
+    spectrums = torch.stack(spectrums)  # [n, batch, 182, 2]
+    spectrums = spectrums.permute(1, 0, 2, 3)
+    batch, n, points, _ = spectrums.shape
+    spectrums = spectrums.data.cpu().numpy()
+    plt.figure(figsize=(9 * batch, 6))
+    for i in range(0, batch):
+        i_batch = spectrums[i]
+        plt.subplot(1, batch, i + 1)
+        for j in range(0, n):
+            j_data = i_batch[j]  # j in n data / i in batch
+            plt.plot(j_data[:, 0], j_data[:, 1], color=colors[j], marker=markers[j], label=labels[j])
+        plt.legend()
+        plt.title(f"sample_No_{i + 1}")
+    plt.tight_layout()
+    plt.savefig(save_path, bbox_inches='tight', dpi=200)
+    plt.close()
+
+    # for i in range(0, len(spectrums)):
+    #     spectrum_batch = spectrums[i].data.cpu().numpy()
+    #     label = labels[i]
+    #     for j in range(0, spectrums[0].shape[0]):
+    #         spectrum = spectrums[i][j].data.cpu().numpy()
+    #
+    #         plt.plot(spectrum[:,0], spectrum[:,1], label=label)
+    # plt.legend()
+    # plt.savefig(save_path, bbox_inches='tight', dpi=200)
+    # plt.close()
+
+
+def demo():
+    a = torch.rand(5, 10, 2)
+    b = torch.rand(5, 10, 2)
+    plot_spectrum([a, b], ["a", "b"])
+
+
+# demo()

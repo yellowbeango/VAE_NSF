@@ -12,7 +12,7 @@ import os
 import argparse
 import sys
 import models as models
-from utils import mkdir_p, get_mean_and_std, Logger, progress_bar, save_model, save_binary_img
+from utils import mkdir_p, get_mean_and_std, Logger, progress_bar, save_model, save_binary_img, plot_spectrum
 from Datasets import Dataset_YH
 
 model_names = sorted(name for name in models.__dict__
@@ -130,7 +130,7 @@ def main():
 
     print("===> start evaluating ...")
     generate_images(net, valloader, name="test_reconstruct")
-    sample_images(net, name="test_randsample")
+    # sample_images(net, name="test_randsample")
 
 
 def train(net, trainloader, optimizer):
@@ -145,7 +145,7 @@ def train(net, trainloader, optimizer):
         inputs = inputs.to(device)
         targets = targets.to(device)
         optimizer.zero_grad()
-        result = net(inputs, targets)
+        result = net(inputs)
         loss_dict = net.module.loss_function(result, targets=targets, M_N=M_N,
                                              spectrum_weight=args.spectrum_weight)  # loss, Reconstruction_Loss, KLD
         loss = loss_dict['loss']
@@ -180,13 +180,21 @@ def train(net, trainloader, optimizer):
 def generate_images(net, valloader, name="val"):
     dataloader_iterator = iter(valloader)
     with torch.no_grad():
-        img, spe = next(dataloader_iterator)
+        img, target = next(dataloader_iterator)
         img = img.to(device)
-        recons = net.module.generate(img)
+        target = target.to(device)
+        out = net.module.generate(img, target)
+        recons = out["recons"]
+        predict_spectrum = out["predict_spectrum"]
+        generate_spectrum = out["generate_spectrum"]
         result = torch.cat([img, recons], dim=0)
         save_binary_img(result.data,
-                        os.path.join(args.checkpoint, f"{name}.png"),
+                        os.path.join(args.checkpoint, f"{name}_image.png"),
                         nrow=args.val_num)
+        plot_spectrum([target,predict_spectrum, generate_spectrum],
+                      ['target','predict','generate'],
+                      os.path.join(args.checkpoint, f"{name}_spectrum.png")
+                      )
 
 
 def sample_images(net, name="val"):
