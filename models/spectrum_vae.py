@@ -176,7 +176,7 @@ class SpectrumVAE(BaseVAE):
 
     def loss_function(self,
                       args,
-                      target: Tensor,
+                      targets: Tensor,
                       **kwargs) -> dict:
         """
         Computes the VAE loss function.
@@ -199,8 +199,8 @@ class SpectrumVAE(BaseVAE):
 
         kld_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim=1), dim=0)
 
-        predict_spectrum_loss = (target - predict_spectrum).norm(dim=-1).mean()
-        generate_spectrum_loss = (target - generate_spectrum).norm(dim=-1).mean()
+        predict_spectrum_loss = (targets - predict_spectrum).norm(dim=-1).mean()
+        generate_spectrum_loss = (targets - generate_spectrum).norm(dim=-1).mean()
 
         loss = recons_loss + kld_weight * kld_loss + spectrum_weight * (predict_spectrum_loss + generate_spectrum_loss)
         return {
