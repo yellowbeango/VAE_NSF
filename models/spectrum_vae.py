@@ -78,20 +78,19 @@ class SpectrumVAE(BaseVAE):
             nn.Linear(2048, latent_dim),
         )
 
-        # self.spectrum_embed = nn.Sequential(
-        #     nn.Linear(self.points * 2, 1024),
-        #     nn.PReLU(),
-        #     nn.Linear(1024, 1024),
-        #     nn.PReLU(),
-        #     nn.Linear(1024, 1024),
-        #     nn.PReLU(),
-        #     nn.Linear(1024, self.latent_dim)
-        # )
-
         # Build Decoder
         modules = []
 
-        self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1] * 4)
+        # self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1] * 4)
+        self.decoder_input = nn.Sequential(
+            nn.Linear(latent_dim, 2048),
+            nn.LayerNorm(2048),
+            nn.LeakyReLU(),
+            nn.Linear(2048, 2048),
+            nn.LayerNorm(2048),
+            nn.LeakyReLU(),
+            nn.Linear(2048, hidden_dims[-1] * 4),
+        )
 
         hidden_dims.reverse()
 
@@ -221,18 +220,14 @@ class SpectrumVAE(BaseVAE):
             'generate_spectrum_loss': generate_spectrum_loss
         }
 
-    def sample(self, z, target: Tensor = None, **kwargs):
-        """
-        Samples from the latent space and return the corresponding
-        image space map.
-        :param num_samples: (Int) Number of samples
-        :param current_device: (Int) Device to run the model
-        :return: (Tensor)
-        """
-        # z = torch.randn(num_samples,
-        #                 self.latent_dim)
-        #
-        # z = z.to(current_device)
+    def sample(self, z, targets: Tensor = None, **kwargs):
+        if targets is None:
+            z = z
+        else:
+            targets = targets.reshape(-1,self.points*2)
+            mu = self.fc_mu(targets)
+            log_var = self.fc_var(targets)
+            z = self.reparameterize(mu, log_var)
 
         samples = self.decode(z)
         _, _, generate_spectrum = self.encode(samples)

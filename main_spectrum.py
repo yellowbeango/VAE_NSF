@@ -197,14 +197,40 @@ def generate_images(net, valloader, name="val"):
                       )
 
 
-def sample_images(net, name="val"):
+def sample_images_random(net, name="rand_sample"):
     with torch.no_grad():
         z = torch.randn(args.val_num, args.latent_dim)
         z = z.to(device)
-        sampled = net.module.sample(z)
-        save_binary_img(sampled.data,
-                        os.path.join(args.checkpoint, f"{name}.png"),
+        results = net.module.sample(z)
+        image = results["image"]
+        specturm = results["specturm"]
+        save_binary_img(image.data,
+                        os.path.join(args.checkpoint, f"{name}_image.png"),
                         nrow=args.val_num)
+        plot_spectrum([specturm],
+                      ['spectrum'],
+                      os.path.join(args.checkpoint, f"{name}_spectrum.png")
+                      )
+
+def sample_images_spectrum(net, name="rand_sample"):
+    dataloader_iterator = iter(valloader)
+    with torch.no_grad():
+        img, target = next(dataloader_iterator)
+        img = img.to(device)
+        target = target.to(device)
+        z = torch.randn(args.val_num, args.latent_dim)
+        z = z.to(device)
+        results = net.module.sample(z, target)
+        image = results["image"]
+        specturm = results["specturm"]
+        result_img = torch.cat([img, image], dim=0)
+        save_binary_img(result_img.data,
+                        os.path.join(args.checkpoint, f"{name}_image.png"),
+                        nrow=args.val_num)
+        plot_spectrum([target, specturm],
+                      ['target','spectrum'],
+                      os.path.join(args.checkpoint, f"{name}_spectrum.png")
+                      )
 
 
 if __name__ == '__main__':
