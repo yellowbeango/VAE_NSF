@@ -183,7 +183,7 @@ class SpectrumVAE(BaseVAE):
         log_var = args["log_var"]
         predict_spectrum = args["predict_spectrum"]
         generate_spectrum = args["generate_spectrum"]
-        target = kwargs["target"]
+        target = args["target"]
 
         kld_weight = kwargs['M_N']  # Account for the minibatch samples from the dataset
 
