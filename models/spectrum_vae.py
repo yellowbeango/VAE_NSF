@@ -44,7 +44,14 @@ class SpectrumVAE(BaseVAE):
         # self.fc_var = nn.Linear(hidden_dims[-1] * 4, latent_dim)
 
         self.spectrum = nn.Sequential(
-            nn.Linear(hidden_dims[-1] * 4, self.points * 2),
+            # nn.Linear(hidden_dims[-1] * 4, self.points * 2),
+            nn.Linear(hidden_dims[-1] * 4, 2048),
+            nn.LayerNorm(2048),
+            nn.LeakyReLU(),
+            nn.Linear(2048, 2048),
+            nn.LayerNorm(2048),
+            nn.LeakyReLU(),
+            nn.Linear(2048, self.points * 2)
         )
 
         # mu and var based on the spectrum
