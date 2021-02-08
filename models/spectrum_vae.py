@@ -44,29 +44,15 @@ class SpectrumVAE(BaseVAE):
         # self.fc_var = nn.Linear(hidden_dims[-1] * 4, latent_dim)
 
         self.spectrum = nn.Sequential(
-            nn.Linear(hidden_dims[-1] * 4, 1024),
-            nn.PReLU(),
-            nn.Linear(1024, 1024),
-            nn.PReLU(),
-            nn.Linear(1024, 1024),
-            nn.PReLU(),
-            nn.Linear(1024, self.points * 2),
+            nn.Linear(hidden_dims[-1] * 4, self.points * 2),
         )
 
         # mu and var based on the spectrum
         self.fc_mu = nn.Sequential(
-            nn.Linear(self.points * 2, 1024),
-            nn.PReLU(),
-            nn.Linear(1024, 1024),
-            nn.PReLU(),
-            nn.Linear(1024, latent_dim),
+            nn.Linear(self.points * 2, latent_dim),
         )
         self.fc_var = nn.Sequential(
-            nn.Linear(self.points * 2, 1024),
-            nn.PReLU(),
-            nn.Linear(1024, 1024),
-            nn.PReLU(),
-            nn.Linear(1024, latent_dim),
+            nn.Linear(self.points * 2, latent_dim),
         )
 
         # self.spectrum_embed = nn.Sequential(
