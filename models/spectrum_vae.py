@@ -231,6 +231,7 @@ class SpectrumVAE(BaseVAE):
 
         samples = self.decode(z)
         _, _, generate_spectrum = self.encode(samples)
+        generate_spectrum = generate_spectrum.reshpe(-1, self.points,2)
         return {
             "image":samples,
             "specturm": generate_spectrum
