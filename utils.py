@@ -302,7 +302,7 @@ def save_binary_img(tensor, file_path="./val.png", nrow=8):
 
 
 def plot_spectrum(spectrums: List[torch.Tensor], labels: List[str], save_path: str = "./spectrum.png"):
-    assert len(spectrums) > 1
+    assert len(spectrums) >= 1
     assert len(spectrums) == len(labels)
 
     colors = ['C0', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9']
