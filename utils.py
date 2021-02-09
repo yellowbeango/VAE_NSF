@@ -308,6 +308,7 @@ def plot_spectrum(spectrums: List[torch.Tensor], labels: List[str], save_path: s
     colors = ['C0', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9']
     markers = ['o', 'v', 's', '*', 'p', '+', 'x']
     spectrums = torch.stack(spectrums)  # [n, batch, 182, 2]
+    print(f"spectrums shape: {spectrums.shape}")
     spectrums = spectrums.permute(1, 0, 2, 3)
     batch, n, points, _ = spectrums.shape
     spectrums = spectrums.data.cpu().numpy()
