@@ -130,7 +130,8 @@ def main():
 
     print("===> start evaluating ...")
     generate_images(net, valloader, name="test_reconstruct")
-    # sample_images(net, name="test_randsample")
+    sample_images_random(net, name="test_sample_random")
+    sample_images_spectrum(net, name="test_sample_spectrum")
 
 
 def train(net, trainloader, optimizer):
@@ -183,7 +184,7 @@ def generate_images(net, valloader, name="val"):
         img, target = next(dataloader_iterator)
         img = img.to(device)
         target = target.to(device)
-        out = net.module.generate(img, target)
+        out = net.module.generate(img)
         recons = out["recons"]
         predict_spectrum = out["predict_spectrum"]
         generate_spectrum = out["generate_spectrum"]
