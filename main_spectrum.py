@@ -184,6 +184,7 @@ def generate_images(net, valloader, name="val"):
         img, target = next(dataloader_iterator)
         img = img.to(device)
         target = target.to(device)
+        plot_spectrum([target], ["target"], os.path.join(args.checkpoint, "target_spectrum.png"))
         out = net.module.generate(img)
         recons = out["recons"]
         predict_spectrum = out["predict_spectrum"]
