@@ -29,19 +29,10 @@ class VanillaVAE(BaseVAE):
         for h_dim in hidden_dims:
             modules.append(
                 nn.Sequential(
-                    # first
-                    nn.Conv2d(in_channels, out_channels=in_channels, kernel_size=3, stride=1, padding=1),
-                    nn.BatchNorm2d(in_channels),
-                    nn.LeakyReLU(),
-                    # second
-                    nn.Conv2d(in_channels, out_channels=h_dim, kernel_size=3, stride=2, padding=1),
+                    nn.Conv2d(in_channels, out_channels=h_dim,
+                              kernel_size=3, stride=2, padding=1),
                     nn.BatchNorm2d(h_dim),
-                    nn.LeakyReLU(),
-                    # third
-                    nn.Conv2d(h_dim, out_channels=h_dim, kernel_size=3, stride=1, padding=1),
-                    nn.BatchNorm2d(h_dim),
-                    nn.LeakyReLU(),
-                )
+                    nn.LeakyReLU())
             )
             in_channels = h_dim
 
@@ -59,23 +50,14 @@ class VanillaVAE(BaseVAE):
         for i in range(len(hidden_dims) - 1):
             modules.append(
                 nn.Sequential(
-                    # first
-                    nn.Conv2d(hidden_dims[i], out_channels=hidden_dims[i], kernel_size=3, stride=1, padding=1),
-                    nn.BatchNorm2d(hidden_dims[i]),
-                    nn.LeakyReLU(),
-                    # second
-                    nn.Upsample(scale_factor=2),
-                    nn.Conv2d(hidden_dims[i], out_channels=hidden_dims[i + 1], kernel_size=3, stride=1, padding=1),
-                    nn.BatchNorm2d(hidden_dims[i+1]),
-                    nn.LeakyReLU(),
-                    # third
-                    nn.Conv2d(hidden_dims[i+1], out_channels=hidden_dims[i+1], kernel_size=3, stride=1, padding=1),
-                    nn.BatchNorm2d(hidden_dims[i+1]),
-                    nn.LeakyReLU(),
-                )
-                    # nn.ConvTranspose2d(hidden_dims[i], hidden_dims[i + 1], kernel_size=3, stride=2, padding=1, output_padding=1),
-                    # nn.BatchNorm2d(hidden_dims[i + 1]),
-                    # nn.LeakyReLU())
+                    nn.ConvTranspose2d(hidden_dims[i],
+                                       hidden_dims[i + 1],
+                                       kernel_size=3,
+                                       stride=2,
+                                       padding=1,
+                                       output_padding=1),
+                    nn.BatchNorm2d(hidden_dims[i + 1]),
+                    nn.LeakyReLU())
             )
 
         self.decoder = nn.Sequential(*modules)
@@ -187,11 +169,3 @@ class VanillaVAE(BaseVAE):
         """
 
         return self.forward(x)[0]
-
-
-def demo():
-    myvae = VanillaVAE(in_channels=1, latent_dim=128)
-    input = torch.rand(1,1,64,64)
-    out = myvae(input)
-
-demo()
