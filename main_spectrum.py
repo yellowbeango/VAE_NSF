@@ -110,7 +110,7 @@ def main():
             print("==> No checkpoint found at '{}'".format(args.resume))
     else:
         logger = Logger(os.path.join(args.checkpoint, 'log.txt'))
-        logger.set_names(['Epoch', 'LR', 'Train Loss', 'Recons Loss', 'KLD Loss', "P_amp Loss", "P_phi Loss",
+        logger.set_names(['Epoch Number', 'Learning Rate', 'Train Loss', 'Recons Loss', 'KLD Loss', "P_amp Loss", "P_phi Loss",
                           # "G_amp Loss", "G_phi Loss"
                           ])
 
