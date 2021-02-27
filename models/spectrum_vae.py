@@ -84,6 +84,7 @@ class SpectrumVAE(BaseVAE):
         :return: (Tensor) List of latent codes
         """
         mu, log_var, spectrum = self.encoder(input)
+        spectrum = self._post_process_spectrm(spectrum)  # [N x 3*points]
         return [mu, log_var, spectrum]
 
     def decode(self, z: Tensor) -> Tensor:
