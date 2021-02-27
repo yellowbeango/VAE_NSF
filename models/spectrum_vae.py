@@ -47,10 +47,10 @@ class SpectrumVAE(BaseVAE):
         self.spectrum = nn.Sequential(
             # nn.Linear(hidden_dims[-1] * 4, self.points * 2),
             nn.Linear(hidden_dims[-1] * 4, 2048),
-            nn.BatchNorm1d(2048),
+            # nn.BatchNorm1d(2048),
             nn.LeakyReLU(),
             nn.Linear(2048, 2048),
-            nn.BatchNorm1d(2048),
+            # nn.BatchNorm1d(2048),
             nn.LeakyReLU(),
             nn.Linear(2048, self.points * 3)
         )
@@ -224,7 +224,8 @@ class SpectrumVAE(BaseVAE):
         # generate_phi_loss = phi_weight * generate_phi_loss
 
         # loss = recons_loss + kld_weight * kld_loss + spectrum_weight
-        loss = recons_loss + kld_loss + predict_amp_loss + predict_phi_loss
+        # loss = recons_loss + kld_loss + predict_amp_loss + predict_phi_loss
+        loss = recons_loss + kld_loss
         return {
             'loss': loss,
             'Reconstruction_Loss': recons_loss,
