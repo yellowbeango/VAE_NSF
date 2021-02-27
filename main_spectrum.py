@@ -117,14 +117,15 @@ def main():
         # training
         print("==> start training..")
         for epoch in range(start_epoch, args.es):
-            print('\nStage_1 Epoch: %d | Learning rate: %f ' % (epoch + 1, scheduler.get_last_lr()[-1]))
+            current_lr = optim.param_groups[0]['lr']
+            print('\nStage_1 Epoch: %d | Learning rate: %f ' % (epoch + 1, current_lr))
             train_out = train(net, trainloader, optimizer)  # {train_loss, recons_loss, kld_loss}
             save_model(net, optimizer, epoch, os.path.join(args.checkpoint, 'checkpoint.pth'))
             if train_out["train_loss"] < best_loss:
                 save_model(net, optimizer, epoch, os.path.join(args.checkpoint, 'checkpoint_best.pth'),
                            loss=train_out["train_loss"])
                 best_loss = train_out["train_loss"]
-            logger.append([epoch + 1, scheduler.get_last_lr()[-1], train_out["train_loss"],
+            logger.append([epoch + 1, current_lr, train_out["train_loss"],
                            train_out["recons_loss"], train_out["kld_loss"],
                            train_out["predict_amp_loss"], train_out["predict_phi_loss"],
                            # train_out["generate_amp_loss"], train_out["generate_phi_loss"],
