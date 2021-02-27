@@ -3,14 +3,13 @@ from .base import BaseVAE
 from torch import nn
 from torch.nn import functional as F
 from abc import abstractmethod
-from typing import List, Callable, Union, Any, TypeVar, Tuple
 import numpy as np
+from typing import List, Callable, Union, Any, TypeVar, Tuple
 
 # from torch import tensor as Tensor
 Tensor = TypeVar('torch.tensor')
 
 __all__ = ['SpectrumVAE']
-
 
 class SpectrumVAE(BaseVAE):
 
@@ -41,28 +40,22 @@ class SpectrumVAE(BaseVAE):
             in_channels = h_dim
 
         self.encoder = nn.Sequential(*modules)
-        # self.fc_mu = nn.Linear(hidden_dims[-1] * 4, latent_dim)
-        # self.fc_var = nn.Linear(hidden_dims[-1] * 4, latent_dim)
-
-        self.spectrum = nn.Sequential(
-            # nn.Linear(hidden_dims[-1] * 4, self.points * 2),
-            nn.Linear(hidden_dims[-1] * 4, 2048),
-            # nn.BatchNorm1d(2048),
-            nn.LeakyReLU(),
-            nn.Linear(2048, 2048),
-            # nn.BatchNorm1d(2048),
-            nn.LeakyReLU(),
-            nn.Linear(2048, self.points * 3)
-        )
-
-        # mu and var based on the spectrum
         self.fc_mu = nn.Linear(hidden_dims[-1] * 4, latent_dim)
         self.fc_var = nn.Linear(hidden_dims[-1] * 4, latent_dim)
+        self.conv_spectrum = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(in_channels, in_channels),
+            nn.BatchNorm2d(in_channels),
+            nn.LeakyReLU(),
+            nn.Conv2d(in_channels, in_channels),
+            nn.BatchNorm2d(in_channels),
+            nn.LeakyReLU(),
+            nn.Conv2d(in_channels, self.points*3)
+        )
 
         # Build Decoder
         modules = []
 
-        # self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1] * 4)
         self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1] * 4)
 
         hidden_dims.reverse()
@@ -95,6 +88,17 @@ class SpectrumVAE(BaseVAE):
                       kernel_size=3, padding=1),
             nn.Tanh())
 
+    def _post_process_spectrm(self, spectrum):
+        n = self.points
+        amp = spectrum[:, :n]
+        cos = spectrum[:, n:2*n]
+        sin = spectrum[:, 2*n:]
+        amp = torch.sigmoid(amp)
+        cos = 2 * torch.sigmoid(cos) - 1
+        sin = 2 * torch.sigmoid(sin) - 1
+        out = torch.stack([amp, cos, sin], dim=2)  # [batch_size, self.points, 3]
+        return out
+
     def encode(self, input: Tensor) -> List[Tensor]:
         """
         Encodes the input by passing through the encoder network
@@ -103,15 +107,15 @@ class SpectrumVAE(BaseVAE):
         :return: (Tensor) List of latent codes
         """
         result = self.encoder(input)
+        spectrum = self.conv_spectrum(result).squeeze(dim=-1).squeeze(dim=-1)
+        spectrum = self._post_process_spectrm(spectrum)  # [N x 3*points]
         result = torch.flatten(result, start_dim=1)
-
         # Split the result into mu and var components
         # of the latent Gaussian distribution
-        spectrum = self.spectrum(result)
         mu = self.fc_mu(result)
         log_var = self.fc_var(result)
 
-        return [mu, log_var, self._post_process_spectrm(spectrum)]
+        return [mu, log_var, spectrum]
 
     def decode(self, z: Tensor) -> Tensor:
         """
@@ -139,31 +143,16 @@ class SpectrumVAE(BaseVAE):
         return eps * std + mu
 
     def forward(self, input: Tensor, **kwargs):
-        mu, log_var, predict_spectrum = self.encode(input)
+        mu, log_var, spectrum = self.encode(input)
         z = self.reparameterize(mu, log_var)
         recons = self.decode(z)
-        _, _, generate_spectrum = self.encode(recons)
-
-        # [self.decode(z), input, mu, log_var, spectrum]
-        return {
+        return{
             "recons": recons,
             "input": input,
             "mu": mu,
             "log_var": log_var,
-            "predict_spectrum": predict_spectrum,
-            "generate_spectrum": generate_spectrum
+            "predict_spectrum": spectrum
         }
-
-    def _post_process_spectrm(self, spectrum):
-        n = self.points
-        amp = spectrum[:, :n]
-        cos = spectrum[:, n:2*n]
-        sin = spectrum[:, 2*n:]
-        amp = torch.sigmoid(amp)
-        cos = 2 * torch.sigmoid(cos) - 1
-        sin = 2 * torch.sigmoid(sin) - 1
-        out = torch.stack([amp, cos, sin], dim=2)  # [batch_size, self.points, 3]
-        return out
 
     def spectrum_loss(self, predict: Tensor, label: Tensor):
         # copy:
@@ -175,20 +164,10 @@ class SpectrumVAE(BaseVAE):
         phi_y_true = torch.sin(2 * np.pi * Phi_true - np.pi)
         phi_x_predict = predict[:, :, 1]
         phi_y_predict = predict[:, :, 2]
-        # Pp = (torch.atan2(yp, xp) + np.pi) / 2 / np.pi
         # MSE loss for amplitude
-        loss_amp = torch.mean((Amp_true - Amp_predict) ** 2)
+        loss_amp = F.mse_loss(Amp_true, Amp_predict)
         # cos/sin MSE loss for phase
-        loss_phi = torch.mean((phi_x_true - phi_x_predict) ** 2 + (phi_y_true - phi_y_predict) ** 2) / 2
-        # Period MSE loss for phase
-
-        # not used
-        # dP = torch.abs(Pt - Pp)
-        # loss_phi2 = torch.mean(torch.min(dP, 1 - dP) ** 2)
-        # normalization loss
-        # loss_norm = torch.mean((xp ** 2 + yp ** 2 - 1) ** 2)
-
-        # total_loss = loss_amp + 0.1 * loss_phi
+        loss_phi = 0.5*(F.mse_loss(phi_x_true, phi_x_predict) + F.mse_loss(phi_y_true, phi_y_predict))
         return loss_amp, loss_phi
 
     def loss_function(self,
@@ -207,51 +186,41 @@ class SpectrumVAE(BaseVAE):
         mu = args["mu"]
         log_var = args["log_var"]
         predict_spectrum = args["predict_spectrum"]
-        # generate_spectrum = args["generate_spectrum"]
 
         kld_weight = kwargs['M_N']  # Account for the minibatch samples from the dataset
         amp_weight = kwargs["amp_weight"]
         phi_weight = kwargs["phi_weight"]
 
-
         recons_loss = F.mse_loss(recons, input)
         kld_loss = kld_weight * torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim=1), dim=0)
         predict_amp_loss, predict_phi_loss = self.spectrum_loss(predict_spectrum, targets)
-        # generate_amp_loss, generate_phi_loss = self.spectrum_loss(generate_spectrum, targets)
-        predict_amp_loss =amp_weight * predict_amp_loss
-        # generate_amp_loss = amp_weight * generate_amp_loss
+        predict_amp_loss = amp_weight * predict_amp_loss
         predict_phi_loss = phi_weight * predict_phi_loss
-        # generate_phi_loss = phi_weight * generate_phi_loss
 
-        # loss = recons_loss + kld_weight * kld_loss + spectrum_weight
-        # loss = recons_loss + kld_loss + predict_amp_loss + predict_phi_loss
-        loss = recons_loss + kld_loss
+        loss = recons_loss + kld_loss + predict_amp_loss + predict_phi_loss
         return {
             'loss': loss,
             'Reconstruction_Loss': recons_loss,
             'KLD': kld_loss,
             'predict_amp_loss': predict_amp_loss,
             'predict_phi_loss': predict_phi_loss,
-            # 'generate_amp_loss': generate_amp_loss,
-            # 'generate_phi_loss': generate_phi_loss,
-
         }
 
-    def sample(self, z, targets: Tensor = None, **kwargs):
-        if targets is None:
-            z = z
-        else:
-            targets = targets.reshape(-1,self.points*2)
-            mu = self.fc_mu(targets)
-            log_var = self.fc_var(targets)
-            z = self.reparameterize(mu, log_var)
+    def sample(self, z, **kwargs) -> Tensor:
+        """
+        Samples from the latent space and return the corresponding
+        image space map.
+        :param num_samples: (Int) Number of samples
+        :param current_device: (Int) Device to run the model
+        :return: (Tensor)
+        """
+        # z = torch.randn(num_samples,
+        #                 self.latent_dim)
+        #
+        # z = z.to(current_device)
 
         samples = self.decode(z)
-        _, _, generate_spectrum = self.encode(samples)
-        return {
-            "image": samples,
-            "specturm": generate_spectrum
-        }
+        return samples
 
     def generate(self, x: Tensor, **kwargs) -> Tensor:
         """
