@@ -5,7 +5,7 @@ from torch.nn import functional as F
 from abc import abstractmethod
 import numpy as np
 from typing import List, Callable, Union, Any, TypeVar, Tuple
-from .ResEncoder import SEResNet101
+from .ResEncoder import SEResNet50
 
 # from torch import tensor as Tensor
 Tensor = TypeVar('torch.tensor')
@@ -28,7 +28,7 @@ class SpectrumVAE(BaseVAE):
         if hidden_dims is None:
             hidden_dims = [32, 64, 128, 256, 512]
 
-        self.encoder = SEResNet101(latent_dim=self.latent_dim,points=self.points)
+        self.encoder = SEResNet50(latent_dim=self.latent_dim,points=self.points)
 
         # Build Decoder
         modules = []

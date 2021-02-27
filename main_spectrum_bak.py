@@ -38,7 +38,8 @@ parser.add_argument('--small', action='store_true', help='Showcase on small set'
 parser.add_argument('--es', default=50, type=int, help='epoch size')
 parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
 parser.add_argument('--bs', default=144, type=int, help='batch size, better to have a square number')
-parser.add_argument('--scheduler_gamma', default=0.5, type=float, help='weight decay')
+parser.add_argument('--wd', default=0.0, type=float, help='weight decay')
+parser.add_argument('--scheduler_gamma', default=0.95, type=float, help='weight decay')
 # weight for specturm loss
 parser.add_argument('--amp_weight', default=1.0, type=float, help='weight for specturm loss')
 parser.add_argument('--phi_weight', default=0.1, type=float, help='weight for specturm loss')
@@ -94,8 +95,8 @@ def main():
         net = torch.nn.DataParallel(net)
         cudnn.benchmark = True
 
-    optimizer = optim.Adam(net.parameters(), lr=args.lr)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=args.scheduler_gamma)
+    optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.wd)
+    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=args.scheduler_gamma)
 
     if args.resume:
         # Load checkpoint.
