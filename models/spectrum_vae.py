@@ -139,7 +139,7 @@ class SpectrumVAE(BaseVAE):
         mu = self.fc_mu(spectrum)
         log_var = self.fc_var(spectrum)
 
-        return [mu, log_var, spectrum]
+        return [mu, log_var, self._post_process_spectrm(spectrum)]
 
     def decode(self, z: Tensor) -> Tensor:
         """
@@ -178,8 +178,8 @@ class SpectrumVAE(BaseVAE):
             "input": input,
             "mu": mu,
             "log_var": log_var,
-            "predict_spectrum": self._post_process_spectrm(predict_spectrum),
-            "generate_spectrum": self._post_process_spectrm(generate_spectrum)
+            "predict_spectrum": predict_spectrum,
+            "generate_spectrum": generate_spectrum
         }
 
     def _post_process_spectrm(self, spectrum):

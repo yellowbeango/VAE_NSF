@@ -117,7 +117,7 @@ def main():
         # training
         print("==> start training..")
         for epoch in range(start_epoch, args.es):
-            current_lr = optim.param_groups[0]['lr']
+            current_lr = optimizer.param_groups[0]['lr']
             print('\nStage_1 Epoch: %d | Learning rate: %f ' % (epoch + 1, current_lr))
             train_out = train(net, trainloader, optimizer)  # {train_loss, recons_loss, kld_loss}
             save_model(net, optimizer, epoch, os.path.join(args.checkpoint, 'checkpoint.pth'))
