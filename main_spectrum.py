@@ -201,13 +201,12 @@ def generate_images(net, valloader, name="val"):
         out = net.module.generate(img)
         recons = out["recons"]
         predict_spectrum = out["predict_spectrum"]
-        generate_spectrum = out["generate_spectrum"]
         result = torch.cat([img, recons], dim=0)
         save_binary_img(result.data,
                         os.path.join(args.checkpoint, f"{name}_image.png"),
                         nrow=args.val_num)
-        plot_amplitude([target, predict_spectrum, generate_spectrum],
-                       ['target', 'predict', 'generate'],
+        plot_amplitude([target, predict_spectrum],
+                       ['target', 'predict'],
                        os.path.join(args.checkpoint, f"{name}_amplitude.png")
                        )
 
