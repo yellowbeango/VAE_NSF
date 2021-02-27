@@ -5,6 +5,7 @@ from torch.nn import functional as F
 from abc import abstractmethod
 import numpy as np
 from typing import List, Callable, Union, Any, TypeVar, Tuple
+from .ResEncoder import SEResNet101
 
 # from torch import tensor as Tensor
 Tensor = TypeVar('torch.tensor')
@@ -24,34 +25,10 @@ class SpectrumVAE(BaseVAE):
         self.latent_dim = latent_dim
         self.points = points
 
-        modules = []
         if hidden_dims is None:
             hidden_dims = [32, 64, 128, 256, 512]
 
-        # Build Encoder
-        for h_dim in hidden_dims:
-            modules.append(
-                nn.Sequential(
-                    nn.Conv2d(in_channels, out_channels=h_dim,
-                              kernel_size=3, stride=2, padding=1),
-                    nn.BatchNorm2d(h_dim),
-                    nn.LeakyReLU())
-            )
-            in_channels = h_dim
-
-        self.encoder = nn.Sequential(*modules)
-        self.fc_mu = nn.Linear(hidden_dims[-1] * 4, latent_dim)
-        self.fc_var = nn.Linear(hidden_dims[-1] * 4, latent_dim)
-        self.conv_spectrum = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(in_channels, in_channels, 1),
-            nn.BatchNorm2d(in_channels),
-            nn.LeakyReLU(),
-            nn.Conv2d(in_channels, in_channels, 1),
-            nn.BatchNorm2d(in_channels),
-            nn.LeakyReLU(),
-            nn.Conv2d(in_channels, self.points*3, 1)
-        )
+        self.encoder = SEResNet101(latent_dim=self.latent_dim,points=self.points)
 
         # Build Decoder
         modules = []
@@ -106,15 +83,7 @@ class SpectrumVAE(BaseVAE):
         :param input: (Tensor) Input tensor to encoder [N x C x H x W]
         :return: (Tensor) List of latent codes
         """
-        result = self.encoder(input)
-        spectrum = self.conv_spectrum(result).squeeze(dim=-1).squeeze(dim=-1)
-        spectrum = self._post_process_spectrm(spectrum)  # [N x 3*points]
-        result = torch.flatten(result, start_dim=1)
-        # Split the result into mu and var components
-        # of the latent Gaussian distribution
-        mu = self.fc_mu(result)
-        log_var = self.fc_var(result)
-
+        mu, log_var, spectrum = self.encoder(input)
         return [mu, log_var, spectrum]
 
     def decode(self, z: Tensor) -> Tensor:
