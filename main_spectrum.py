@@ -26,9 +26,9 @@ parser.add_argument('--model', default='SpectrumVAE', choices=model_names, type=
 parser.add_argument('--latent_dim', default=128, type=int)
 
 # Parameters for  dataset
-parser.add_argument('--traindir', default='/home/UNT/jg0737/Desktop/NSFdata/train_data', type=str, metavar='PATH',
+parser.add_argument('--traindir', default='/home/g1007540910/NSFdata/train_data', type=str, metavar='PATH',
                     help='path to training set')
-parser.add_argument('--testdir', default='/home/UNT/jg0737/Desktop/NSFdata/test_data', type=str, metavar='PATH',
+parser.add_argument('--testdir', default='/home/g1007540910/NSFdata/test_data', type=str, metavar='PATH',
                     help='path to testing set')
 
 # Parameters for  training
