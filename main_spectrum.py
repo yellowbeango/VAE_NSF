@@ -39,7 +39,9 @@ parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
 parser.add_argument('--bs', default=144, type=int, help='batch size, better to have a square number')
 parser.add_argument('--wd', default=0.0, type=float, help='weight decay')
 parser.add_argument('--scheduler_gamma', default=0.95, type=float, help='weight decay')
-parser.add_argument('--spectrum_weight', default=1.0, type=float, help='weight for specturm loss')
+# weight for specturm loss
+parser.add_argument('--amp_weight', default=1.0, type=float, help='weight for specturm loss')
+parser.add_argument('--phi_weight', default=0.5, type=float, help='weight for specturm loss')
 
 parser.add_argument('--evaluate', action='store_true', help='Evaluate model, ensuring the resume path is given')
 parser.add_argument('--val_num', default=8, type=int,
@@ -107,7 +109,9 @@ def main():
             print("==> No checkpoint found at '{}'".format(args.resume))
     else:
         logger = Logger(os.path.join(args.checkpoint, 'log.txt'))
-        logger.set_names(['Epoch', 'LR', 'Train Loss', 'Recons Loss', 'KLD Loss', "P_spectrum Loss", "G_spectrum Loss"])
+        logger.set_names(['Epoch', 'LR', 'Train Loss', 'Recons Loss', 'KLD Loss', "P_amp Loss", "P_phi Loss",
+                          # "G_amp Loss", "G_phi Loss"
+                          ])
 
     if not args.evaluate:
         # training
@@ -122,7 +126,8 @@ def main():
                 best_loss = train_out["train_loss"]
             logger.append([epoch + 1, scheduler.get_last_lr()[-1], train_out["train_loss"],
                            train_out["recons_loss"], train_out["kld_loss"],
-                           train_out["predict_spectrum_loss"], train_out["generate_spectrum_loss"]
+                           train_out["predict_amp_loss"], train_out["predict_phi_loss"],
+                           # train_out["generate_amp_loss"], train_out["generate_phi_loss"],
                            ])
             scheduler.step()
         logger.close()
@@ -139,8 +144,10 @@ def train(net, trainloader, optimizer):
     train_loss = 0
     recons_loss = 0
     kld_loss = 0
-    predict_spectrum_loss = 0
-    generate_spectrum_loss = 0
+    predict_amp_loss = 0
+    predict_phi_loss = 0
+    # generate_amp_loss = 0
+    # generate_phi_loss = 0
 
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         inputs = inputs.to(device)
@@ -148,7 +155,8 @@ def train(net, trainloader, optimizer):
         optimizer.zero_grad()
         result = net(inputs)
         loss_dict = net.module.loss_function(result, targets=targets, M_N=M_N,
-                                             spectrum_weight=args.spectrum_weight)  # loss, Reconstruction_Loss, KLD
+                                             amp_weight=args.amp_weight,
+                                             phi_weight=args.phi_weight)  # loss, Reconstruction_Loss, KLD, 1,2,3,4
         loss = loss_dict['loss']
         loss.backward()
         optimizer.step()
@@ -156,16 +164,18 @@ def train(net, trainloader, optimizer):
         train_loss += loss.item()
         recons_loss += (loss_dict['Reconstruction_Loss']).item()
         kld_loss += (loss_dict['KLD']).item()
-        predict_spectrum_loss += (loss_dict["predict_spectrum_loss"]).item()
-        generate_spectrum_loss += (loss_dict["generate_spectrum_loss"]).item()
+        predict_amp_loss += (loss_dict["predict_amp_loss"]).item()
+        predict_phi_loss += (loss_dict["predict_phi_loss"]).item()
+        # generate_amp_loss += (loss_dict["generate_amp_loss"]).item()
+        # generate_phi_loss += (loss_dict["generate_phi_loss"]).item()
 
         progress_bar(batch_idx, len(trainloader),
-                     'All:%.3f |Rec:%.3f |KLD:%.3f |Pre:%.3f |Gen:%.3f'
+                     'All:%.3f |Rec:%.3f |KLD:%.3f |Pre:%.3f '
                      % (train_loss / (batch_idx + 1),
                         recons_loss / (batch_idx + 1),
                         kld_loss / (batch_idx + 1),
-                        predict_spectrum_loss / (batch_idx + 1),
-                        generate_spectrum_loss /  (batch_idx + 1)
+                        (predict_amp_loss+predict_phi_loss) / (batch_idx + 1),
+                        # (generate_amp_loss+generate_phi_loss) / (batch_idx + 1)
                         )
                      )
 
@@ -173,8 +183,10 @@ def train(net, trainloader, optimizer):
         "train_loss": train_loss / (batch_idx + 1),
         "recons_loss": recons_loss / (batch_idx + 1),
         "kld_loss": kld_loss / (batch_idx + 1),
-        "predict_spectrum_loss": predict_spectrum_loss / (batch_idx + 1),
-        "generate_spectrum_loss": generate_spectrum_loss / (batch_idx + 1)
+        "predict_amp_loss": predict_amp_loss / (batch_idx + 1),
+        "predict_phi_loss": predict_phi_loss / (batch_idx + 1),
+        # "generate_amp_loss": generate_amp_loss / (batch_idx + 1),
+        # "generate_phi_loss": generate_phi_loss / (batch_idx + 1),
     }
 
 

@@ -4,6 +4,7 @@ from torch import nn
 from torch.nn import functional as F
 from abc import abstractmethod
 from typing import List, Callable, Union, Any, TypeVar, Tuple
+import numpy as np
 
 # from torch import tensor as Tensor
 Tensor = TypeVar('torch.tensor')
@@ -51,14 +52,14 @@ class SpectrumVAE(BaseVAE):
             nn.Linear(2048, 2048),
             nn.LayerNorm(2048),
             nn.LeakyReLU(),
-            nn.Linear(2048, self.points * 2)
+            nn.Linear(2048, self.points * 3)
         )
 
         # mu and var based on the spectrum
         self.fc_mu = nn.Sequential(
-            # nn.Linear(self.points * 2, latent_dim),
+            # nn.Linear(self.points * 3, latent_dim),
             nn.LeakyReLU(),
-            nn.Linear(self.points * 2, 2048),
+            nn.Linear(self.points * 3, 2048),
             nn.LayerNorm(2048),
             nn.LeakyReLU(),
             nn.Linear(2048, 2048),
@@ -69,7 +70,7 @@ class SpectrumVAE(BaseVAE):
         self.fc_var = nn.Sequential(
             # nn.Linear(self.points * 2, latent_dim),
             nn.LeakyReLU(),
-            nn.Linear(self.points * 2, 2048),
+            nn.Linear(self.points * 3, 2048),
             nn.LayerNorm(2048),
             nn.LeakyReLU(),
             nn.Linear(2048, 2048),
@@ -177,10 +178,48 @@ class SpectrumVAE(BaseVAE):
             "input": input,
             "mu": mu,
             "log_var": log_var,
-            "predict_spectrum": predict_spectrum.reshape(-1, self.points, 2),  # spectrum from the input data
-            "generate_spectrum": generate_spectrum.reshape(-1, self.points, 2)  # spectrum from the generated data
-
+            "predict_spectrum": self._post_process_spectrm(predict_spectrum),
+            "generate_spectrum": self._post_process_spectrm(generate_spectrum)
         }
+
+    def _post_process_spectrm(self, spectrum):
+        n = self.points
+        amp = spectrum[:, :n]
+        cos = spectrum[:, n:2*n]
+        sin = spectrum[:, 2*n:]
+        amp = torch.sigmoid(amp)
+        # cos = 2 * torch.sigmoid(cos) - 1
+        # sin = 2 * torch.sigmoid(sin) - 1
+        cos = torch.tanh(cos)
+        sin = torch.tanh(sin)
+        out = torch.stack([amp, cos, sin], dim=2)  # [batch_size, self.points, 3]
+        return out
+
+    def spectrum_loss(self, predict: Tensor, label: Tensor):
+        # copy:
+        # https://github.com/xyhbobby/DL_for_optical_design//utils/utils.py # L224
+        At = label[:, :, 0]
+        Ap = predict[:, :, 0]
+        Pt = label[:, :, 1]
+        xt = torch.cos(2 * np.pi * Pt - np.pi)
+        yt = torch.sin(2 * np.pi * Pt - np.pi)
+        xp = predict[:, :, 1]
+        yp = predict[:, :, 2]
+        # Pp = (torch.atan2(yp, xp) + np.pi) / 2 / np.pi
+        # MSE loss for amplitude
+        loss_amp = torch.mean((At - Ap) ** 2)
+        # cos/sin MSE loss for phase
+        loss_phi = torch.mean((xt - xp) ** 2 + (yt - yp) ** 2) / 2
+        # Period MSE loss for phase
+
+        # not used
+        # dP = torch.abs(Pt - Pp)
+        # loss_phi2 = torch.mean(torch.min(dP, 1 - dP) ** 2)
+        # normalization loss
+        # loss_norm = torch.mean((xp ** 2 + yp ** 2 - 1) ** 2)
+
+        # total_loss = loss_amp + 0.1 * loss_phi
+        return loss_amp, loss_phi
 
     def loss_function(self,
                       args,
@@ -201,23 +240,30 @@ class SpectrumVAE(BaseVAE):
         generate_spectrum = args["generate_spectrum"]
 
         kld_weight = kwargs['M_N']  # Account for the minibatch samples from the dataset
+        amp_weight = kwargs["amp_weight"]
+        phi_weight = kwargs["phi_weight"]
 
-        spectrum_weight = kwargs["spectrum_weight"]
+
         recons_loss = F.mse_loss(recons, input)
-
-        kld_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim=1), dim=0)
-
-        predict_spectrum_loss = (targets - predict_spectrum).norm(dim=-1).mean()
-        generate_spectrum_loss = (targets - generate_spectrum).norm(dim=-1).mean()
+        kld_loss = kld_weight * torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim=1), dim=0)
+        predict_amp_loss, predict_phi_loss = self.spectrum_loss(predict_spectrum, targets)
+        # generate_amp_loss, generate_phi_loss = self.spectrum_loss(generate_spectrum, targets)
+        predict_amp_loss =amp_weight * predict_amp_loss
+        # generate_amp_loss = amp_weight * generate_amp_loss
+        predict_phi_loss = phi_weight * predict_phi_loss
+        # generate_phi_loss = phi_weight * generate_phi_loss
 
         # loss = recons_loss + kld_weight * kld_loss + spectrum_weight
-        loss = recons_loss + kld_weight * kld_loss + spectrum_weight * (predict_spectrum_loss + generate_spectrum_loss)
+        loss = recons_loss + kld_loss + predict_amp_loss + predict_phi_loss
         return {
             'loss': loss,
             'Reconstruction_Loss': recons_loss,
-            'KLD': -kld_loss,
-            'predict_spectrum_loss': predict_spectrum_loss,
-            'generate_spectrum_loss': generate_spectrum_loss
+            'KLD': kld_loss,
+            'predict_amp_loss': predict_amp_loss,
+            'predict_phi_loss': predict_phi_loss,
+            # 'generate_amp_loss': generate_amp_loss,
+            # 'generate_phi_loss': generate_phi_loss,
+
         }
 
     def sample(self, z, targets: Tensor = None, **kwargs):
