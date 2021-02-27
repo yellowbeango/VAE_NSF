@@ -47,10 +47,10 @@ class SpectrumVAE(BaseVAE):
         self.spectrum = nn.Sequential(
             # nn.Linear(hidden_dims[-1] * 4, self.points * 2),
             nn.Linear(hidden_dims[-1] * 4, 2048),
-            nn.LayerNorm(2048),
+            nn.BatchNorm1d(2048),
             nn.LeakyReLU(),
             nn.Linear(2048, 2048),
-            nn.LayerNorm(2048),
+            nn.BatchNorm1d(2048),
             nn.LeakyReLU(),
             nn.Linear(2048, self.points * 3)
         )
@@ -60,10 +60,10 @@ class SpectrumVAE(BaseVAE):
             # nn.Linear(self.points * 3, latent_dim),
             nn.LeakyReLU(),
             nn.Linear(self.points * 3, 2048),
-            nn.LayerNorm(2048),
+            nn.BatchNorm1d(2048),
             nn.LeakyReLU(),
             nn.Linear(2048, 2048),
-            nn.LayerNorm(2048),
+            nn.BatchNorm1d(2048),
             nn.LeakyReLU(),
             nn.Linear(2048, latent_dim),
         )
@@ -71,10 +71,10 @@ class SpectrumVAE(BaseVAE):
             # nn.Linear(self.points * 2, latent_dim),
             nn.LeakyReLU(),
             nn.Linear(self.points * 3, 2048),
-            nn.LayerNorm(2048),
+            nn.BatchNorm1d(2048),
             nn.LeakyReLU(),
             nn.Linear(2048, 2048),
-            nn.LayerNorm(2048),
+            nn.BatchNorm1d(2048),
             nn.LeakyReLU(),
             nn.Linear(2048, latent_dim),
         )
@@ -85,10 +85,10 @@ class SpectrumVAE(BaseVAE):
         # self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1] * 4)
         self.decoder_input = nn.Sequential(
             nn.Linear(latent_dim, 2048),
-            nn.LayerNorm(2048),
+            nn.BatchNorm1d(2048),
             nn.LeakyReLU(),
             nn.Linear(2048, 2048),
-            nn.LayerNorm(2048),
+            nn.BatchNorm1d(2048),
             nn.LeakyReLU(),
             nn.Linear(2048, hidden_dims[-1] * 4),
         )
