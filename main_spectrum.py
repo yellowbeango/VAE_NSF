@@ -11,6 +11,7 @@ import torchvision.transforms as transforms
 import os
 import argparse
 import sys
+import traceback
 import models as models
 from utils import mkdir_p, get_mean_and_std, Logger, progress_bar, \
     save_model, save_binary_img, plot_spectrum, plot_amplitude
@@ -35,8 +36,8 @@ parser.add_argument('--testdir', default='/home/g1007540910/NSFdata/test_data', 
 # Parameters for  training
 parser.add_argument('--resume', default='', type=str, metavar='PATH', help='path to latest checkpoint')
 parser.add_argument('--small', action='store_true', help='Showcase on small set')
-parser.add_argument('--es', default=50, type=int, help='epoch size')
-parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
+parser.add_argument('--es', default=70, type=int, help='epoch size')
+parser.add_argument('--lr', default=0.001, type=float, help='learning rate')
 parser.add_argument('--bs', default=144, type=int, help='batch size, better to have a square number')
 parser.add_argument('--scheduler_gamma', default=0.5, type=float, help='weight decay')
 # weight for specturm loss
@@ -95,7 +96,7 @@ def main():
         cudnn.benchmark = True
 
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=args.scheduler_gamma)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=args.scheduler_gamma)
 
     if args.resume:
         # Load checkpoint.
@@ -131,6 +132,8 @@ def main():
                            # train_out["generate_amp_loss"], train_out["generate_phi_loss"],
                            ])
             scheduler.step()
+            if epoch%5==0:
+                generate_images(net, valloader, name=f"epoch{epoch}_reconstruct")
         logger.close()
         print(f"\n==> Finish training..\n")
 
@@ -247,4 +250,12 @@ def sample_images_spectrum(net, name="rand_sample"):
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+    try:
+        main()
+    except Exception as e:
+        print(e)
+        traceback.print_exc()
+        os.system("sudo poweroff")
+    print("DONE, FINISHED!!!")
+    os.system("sudo poweroff")
