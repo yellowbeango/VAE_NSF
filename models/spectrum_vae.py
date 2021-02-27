@@ -44,13 +44,13 @@ class SpectrumVAE(BaseVAE):
         self.fc_var = nn.Linear(hidden_dims[-1] * 4, latent_dim)
         self.conv_spectrum = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(in_channels, in_channels,1),
+            nn.Conv2d(in_channels, in_channels, 1),
             nn.BatchNorm2d(in_channels),
             nn.LeakyReLU(),
-            nn.Conv2d(in_channels, in_channels,1),
+            nn.Conv2d(in_channels, in_channels, 1),
             nn.BatchNorm2d(in_channels),
             nn.LeakyReLU(),
-            nn.Conv2d(in_channels, self.points*3)
+            nn.Conv2d(in_channels, self.points*3, 1)
         )
 
         # Build Decoder
