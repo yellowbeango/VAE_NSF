@@ -47,51 +47,23 @@ class SpectrumVAE(BaseVAE):
         self.spectrum = nn.Sequential(
             # nn.Linear(hidden_dims[-1] * 4, self.points * 2),
             nn.Linear(hidden_dims[-1] * 4, 2048),
-            # nn.BatchNorm1d(2048),
+            nn.BatchNorm1d(2048),
             nn.LeakyReLU(),
             nn.Linear(2048, 2048),
-            # nn.BatchNorm1d(2048),
+            nn.BatchNorm1d(2048),
             nn.LeakyReLU(),
             nn.Linear(2048, self.points * 3)
         )
 
         # mu and var based on the spectrum
-        self.fc_mu = nn.Sequential(
-            # nn.Linear(self.points * 3, latent_dim),
-            nn.LeakyReLU(),
-            nn.Linear(hidden_dims[-1] * 4, 2048),
-            nn.LayerNorm(2048),
-            nn.LeakyReLU(),
-            nn.Linear(2048, 2048),
-            nn.LayerNorm(2048),
-            nn.LeakyReLU(),
-            nn.Linear(2048, latent_dim),
-        )
-        self.fc_var = nn.Sequential(
-            # nn.Linear(self.points * 2, latent_dim),
-            nn.LeakyReLU(),
-            nn.Linear(hidden_dims[-1] * 4, 2048),
-            nn.LayerNorm(2048),
-            nn.LeakyReLU(),
-            nn.Linear(2048, 2048),
-            nn.LayerNorm(2048),
-            nn.LeakyReLU(),
-            nn.Linear(2048, latent_dim),
-        )
+        self.fc_mu = nn.Linear(hidden_dims[-1] * 4, latent_dim)
+        self.fc_var = nn.Linear(hidden_dims[-1] * 4, latent_dim)
 
         # Build Decoder
         modules = []
 
         # self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1] * 4)
-        self.decoder_input = nn.Sequential(
-            nn.Linear(latent_dim, 2048),
-            nn.LayerNorm(2048),
-            nn.LeakyReLU(),
-            nn.Linear(2048, 2048),
-            nn.LayerNorm(2048),
-            nn.LeakyReLU(),
-            nn.Linear(2048, hidden_dims[-1] * 4),
-        )
+        self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1] * 4)
 
         hidden_dims.reverse()
 
