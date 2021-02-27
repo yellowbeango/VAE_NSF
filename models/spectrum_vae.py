@@ -188,28 +188,26 @@ class SpectrumVAE(BaseVAE):
         cos = spectrum[:, n:2*n]
         sin = spectrum[:, 2*n:]
         amp = torch.sigmoid(amp)
-        # cos = 2 * torch.sigmoid(cos) - 1
-        # sin = 2 * torch.sigmoid(sin) - 1
-        cos = torch.tanh(cos)
-        sin = torch.tanh(sin)
+        cos = 2 * torch.sigmoid(cos) - 1
+        sin = 2 * torch.sigmoid(sin) - 1
         out = torch.stack([amp, cos, sin], dim=2)  # [batch_size, self.points, 3]
         return out
 
     def spectrum_loss(self, predict: Tensor, label: Tensor):
         # copy:
         # https://github.com/xyhbobby/DL_for_optical_design//utils/utils.py # L224
-        At = label[:, :, 0]
-        Ap = predict[:, :, 0]
-        Pt = label[:, :, 1]
-        xt = torch.cos(2 * np.pi * Pt - np.pi)
-        yt = torch.sin(2 * np.pi * Pt - np.pi)
-        xp = predict[:, :, 1]
-        yp = predict[:, :, 2]
+        Amp_true = label[:, :, 0]
+        Amp_predict = predict[:, :, 0]
+        Phi_true = label[:, :, 1]
+        phi_x_true = torch.cos(2 * np.pi * Phi_true - np.pi)
+        phi_y_true = torch.sin(2 * np.pi * Phi_true - np.pi)
+        phi_x_predict = predict[:, :, 1]
+        phi_y_predict = predict[:, :, 2]
         # Pp = (torch.atan2(yp, xp) + np.pi) / 2 / np.pi
         # MSE loss for amplitude
-        loss_amp = torch.mean((At - Ap) ** 2)
+        loss_amp = torch.mean((Amp_true - Amp_predict) ** 2)
         # cos/sin MSE loss for phase
-        loss_phi = torch.mean((xt - xp) ** 2 + (yt - yp) ** 2) / 2
+        loss_phi = torch.mean((phi_x_true - phi_x_predict) ** 2 + (phi_y_true - phi_y_predict) ** 2) / 2
         # Period MSE loss for phase
 
         # not used
@@ -237,7 +235,7 @@ class SpectrumVAE(BaseVAE):
         mu = args["mu"]
         log_var = args["log_var"]
         predict_spectrum = args["predict_spectrum"]
-        generate_spectrum = args["generate_spectrum"]
+        # generate_spectrum = args["generate_spectrum"]
 
         kld_weight = kwargs['M_N']  # Account for the minibatch samples from the dataset
         amp_weight = kwargs["amp_weight"]
@@ -277,9 +275,8 @@ class SpectrumVAE(BaseVAE):
 
         samples = self.decode(z)
         _, _, generate_spectrum = self.encode(samples)
-        generate_spectrum = generate_spectrum.reshape(-1, self.points,2)
         return {
-            "image":samples,
+            "image": samples,
             "specturm": generate_spectrum
         }
 

@@ -12,7 +12,8 @@ import os
 import argparse
 import sys
 import models as models
-from utils import mkdir_p, get_mean_and_std, Logger, progress_bar, save_model, save_binary_img, plot_spectrum
+from utils import mkdir_p, get_mean_and_std, Logger, progress_bar, \
+    save_model, save_binary_img, plot_spectrum, plot_amplitude
 from Datasets import Dataset_YH
 
 model_names = sorted(name for name in models.__dict__
@@ -41,7 +42,7 @@ parser.add_argument('--wd', default=0.0, type=float, help='weight decay')
 parser.add_argument('--scheduler_gamma', default=0.95, type=float, help='weight decay')
 # weight for specturm loss
 parser.add_argument('--amp_weight', default=1.0, type=float, help='weight for specturm loss')
-parser.add_argument('--phi_weight', default=0.5, type=float, help='weight for specturm loss')
+parser.add_argument('--phi_weight', default=0.1, type=float, help='weight for specturm loss')
 
 parser.add_argument('--evaluate', action='store_true', help='Evaluate model, ensuring the resume path is given')
 parser.add_argument('--val_num', default=8, type=int,
@@ -49,8 +50,8 @@ parser.add_argument('--val_num', default=8, type=int,
 
 args = parser.parse_args()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-args.checkpoint = './checkpoints/spectrum/%s-%s' % (
-    args.model, args.latent_dim)
+args.checkpoint = './checkpoints/spectrum/%s-%s-amp%s-phi%s' % (
+    args.model, args.latent_dim, args.amp_weight, args.phi_weight)
 if not os.path.isdir(args.checkpoint):
     mkdir_p(args.checkpoint)
 
@@ -136,8 +137,8 @@ def main():
 
     print("===> start evaluating ...")
     generate_images(net, valloader, name="test_reconstruct")
-    sample_images_random(net, name="test_sample_random")
-    sample_images_spectrum(net, name="test_sample_spectrum")
+    # sample_images_random(net, name="test_sample_random")
+    # sample_images_spectrum(net, name="test_sample_spectrum")
 
 
 def train(net, trainloader, optimizer):
@@ -197,7 +198,6 @@ def generate_images(net, valloader, name="val"):
         img, target = next(dataloader_iterator)
         img = img.to(device)
         target = target.to(device)
-        plot_spectrum([target], ["target"], os.path.join(args.checkpoint, "target_spectrum.png"))
         out = net.module.generate(img)
         recons = out["recons"]
         predict_spectrum = out["predict_spectrum"]
@@ -206,10 +206,10 @@ def generate_images(net, valloader, name="val"):
         save_binary_img(result.data,
                         os.path.join(args.checkpoint, f"{name}_image.png"),
                         nrow=args.val_num)
-        plot_spectrum([target,predict_spectrum, generate_spectrum],
-                      ['target','predict','generate'],
-                      os.path.join(args.checkpoint, f"{name}_spectrum.png")
-                      )
+        plot_amplitude([target, predict_spectrum, generate_spectrum],
+                       ['target', 'predict', 'generate'],
+                       os.path.join(args.checkpoint, f"{name}_amplitude.png")
+                       )
 
 
 def sample_images_random(net, name="rand_sample"):

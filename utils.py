@@ -337,6 +337,35 @@ def plot_spectrum(spectrums: List[torch.Tensor], labels: List[str], save_path: s
     # plt.close()
 
 
+def plot_amplitude(spectrum_list: List[torch.Tensor], labels: List[str], save_path: str = "./spectrum.png"):
+    assert len(spectrum_list) >= 1
+    assert len(spectrum_list) == len(labels)
+    x_range = np.linspace(600, 1200, 61)
+
+    colors = ['C0', 'C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9']
+    markers = ['o', 'v', 's', '*', 'p', '+', 'x']
+    amplitude_list = []
+    for spectrum in spectrum_list:
+        amplitude_list.append(spectrum[:, :, 0])
+
+    amplitudes = torch.stack(amplitude_list, dim=2)  # [batch, 183, n]
+    amplitudes = amplitudes.permute(0, 2, 1) # [batch, n, 183]
+    batch, n, points = amplitudes.shape
+    amplitudes = amplitudes.data.cpu().numpy()
+    plt.figure(figsize=(9 * batch, 6))
+    for i in range(0, batch):
+        i_batch = amplitudes[i]  # [n, 183]
+        plt.subplot(1, batch, i + 1)
+        for j in range(0, n):
+            j_data = i_batch[j]  # j in n data / i in batch [183]
+            plt.plot(x_range, j_data[:61], color=colors[j], marker=markers[j], label=labels[j])
+        plt.legend()
+        plt.title(f"sample_No_{i + 1}")
+    plt.tight_layout()
+    plt.savefig(save_path, bbox_inches='tight', dpi=200)
+    plt.close()
+
+
 def demo():
     a = torch.rand(5, 10, 2)
     b = torch.rand(5, 10, 2)
