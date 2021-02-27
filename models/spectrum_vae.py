@@ -59,7 +59,7 @@ class SpectrumVAE(BaseVAE):
         self.fc_mu = nn.Sequential(
             # nn.Linear(self.points * 3, latent_dim),
             nn.LeakyReLU(),
-            nn.Linear(self.points * 3, 2048),
+            nn.Linear(hidden_dims[-1] * 4, 2048),
             # nn.BatchNorm1d(2048),
             nn.LeakyReLU(),
             nn.Linear(2048, 2048),
@@ -70,7 +70,7 @@ class SpectrumVAE(BaseVAE):
         self.fc_var = nn.Sequential(
             # nn.Linear(self.points * 2, latent_dim),
             nn.LeakyReLU(),
-            nn.Linear(self.points * 3, 2048),
+            nn.Linear(hidden_dims[-1] * 4, 2048),
             # nn.BatchNorm1d(2048),
             nn.LeakyReLU(),
             nn.Linear(2048, 2048),
@@ -136,8 +136,8 @@ class SpectrumVAE(BaseVAE):
         # Split the result into mu and var components
         # of the latent Gaussian distribution
         spectrum = self.spectrum(result)
-        mu = self.fc_mu(spectrum)
-        log_var = self.fc_var(spectrum)
+        mu = self.fc_mu(result)
+        log_var = self.fc_var(result)
 
         return [mu, log_var, self._post_process_spectrm(spectrum)]
 
