@@ -99,7 +99,17 @@ class SpectrumNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2, reduction=reduction)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2, reduction=reduction)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2, reduction=reduction)
-        self.fc_spectrum = nn.Linear(512 * block.expansion, 3 * points)
+        self.conv_spectrum = nn.Sequential(
+            nn.Conv2d(512 * block.expansion, 512,1),
+            nn.BatchNorm2d(512),
+            nn.LeakyReLU()
+        )
+        self.fc_spectrum = nn.Sequential(
+            nn.Linear(512*4 , 512),
+            nn.BatchNorm1d(512),
+            nn.LeakyReLU(),
+            nn.Linear(512, 3 * points)
+        )
 
     # block means SEPreActBlock or SEPreActBootleneck
     def _make_layer(self, block, planes, num_blocks, stride, reduction):
@@ -127,9 +137,8 @@ class SpectrumNet(nn.Module):
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
-        out = F.avg_pool2d(out, 2)
+        out = self.conv_spectrum(out)
         out = out.view(out.size(0), -1)
-
         spectrum = self.fc_spectrum(out)
         spectrum = self._post_process_spectrm(spectrum)
 
@@ -157,7 +166,7 @@ def SpectrumNet152(input_channel=1, points=183):
 
 
 def demo():
-    net = SpectrumNet18()
+    net = SpectrumNet50()
     spectrum = net((torch.randn(3, 1, 64, 64)))
     print(spectrum.size())
 

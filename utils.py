@@ -388,7 +388,7 @@ def plot_amplitude_and_phi(spectrum_list: List[torch.Tensor], labels: List[str],
     for nnn in range(3):
         for i in range(0, batch):
             i_batch = amplitudes[i]  # [n, 183]
-            plt.subplot(nnn+1, batch, num*nnn+i+1)
+            plt.subplot(3, batch, num*nnn+i+1)
             for j in range(0, n):
                 j_data = i_batch[j]  # j in n data / i in batch [183]
                 plt.plot(x_range, j_data[61*nnn:61*(nnn+1)], color=colors[j], marker=markers[j], label=labels[j])
