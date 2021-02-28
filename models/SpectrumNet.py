@@ -161,4 +161,4 @@ def demo():
     spectrum = net((torch.randn(3, 1, 64, 64)))
     print(spectrum.size())
 
-demo()
+# demo()
