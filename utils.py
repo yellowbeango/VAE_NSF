@@ -368,7 +368,7 @@ def plot_amplitude(spectrum_list: List[torch.Tensor], labels: List[str], save_pa
 
 
 
-def plot_amplitude_and_phi(spectrum_list: List[torch.Tensor], labels: List[str], save_path: str = "./spectrum.png"):
+def plot_amplitude_and_phi(spectrum_list: List[torch.Tensor], labels: List[str], num=8, save_path: str = "./spectrum.png"):
     assert len(spectrum_list) >= 1
     assert len(spectrum_list) == len(labels)
     x_range = np.linspace(600, 1200, 61)
@@ -388,7 +388,7 @@ def plot_amplitude_and_phi(spectrum_list: List[torch.Tensor], labels: List[str],
     for nnn in range(3):
         for i in range(0, batch):
             i_batch = amplitudes[i]  # [n, 183]
-            plt.subplot(nnn+1, batch, i + 1)
+            plt.subplot(nnn+1, batch, num*nnn+i+1)
             for j in range(0, n):
                 j_data = i_batch[j]  # j in n data / i in batch [183]
                 plt.plot(x_range, j_data[61*nnn:61*(nnn+1)], color=colors[j], marker=markers[j], label=labels[j])
