@@ -22,11 +22,11 @@ class SpectrumLoss(nn.Module):
         phi_y_predict = predict[:, :, 2]
         # MSE loss for amplitude
         loss_amp = F.mse_loss(Amp_predict, Amp_true)
-        loss_phi = 0.5*(F.mse_loss(phi_x_predict, phi_x_true) + F.mse_loss(phi_y_predict, phi_y_true))
+        loss_phi = 0.5 * (F.mse_loss(phi_x_predict, phi_x_true) + F.mse_loss(phi_y_predict, phi_y_true))
 
-        loss_amp = self.amp_weight*loss_amp
-        loss_phi = self.phi_weight* loss_phi
-        loss = loss_phi+ loss_phi
+        loss_amp = self.amp_weight * loss_amp
+        loss_phi = self.phi_weight * loss_phi
+        loss = loss_amp + loss_phi
 
         return {"loss": loss,
                 "loss_amp": loss_amp,
