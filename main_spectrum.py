@@ -250,12 +250,12 @@ def sample_images_spectrum(net, name="rand_sample"):
 
 
 if __name__ == '__main__':
-    # main()
-    try:
-        main()
-    except Exception as e:
-        print(e)
-        traceback.print_exc()
-        os.system("sudo poweroff")
-    print("DONE, FINISHED!!!")
-    os.system("sudo poweroff")
+    main()
+    # try:
+    #     main()
+    # except Exception as e:
+    #     print(e)
+    #     traceback.print_exc()
+    #     os.system("sudo poweroff")
+    # print("DONE, FINISHED!!!")
+    # os.system("sudo poweroff")
