@@ -1,7 +1,3 @@
-"""
-This file just train a spectrum decoder, nothing related to VAE.
-"""""
-
 from __future__ import print_function
 
 import torch
@@ -18,9 +14,8 @@ import sys
 import traceback
 import models as models
 from utils import mkdir_p, get_mean_and_std, Logger, progress_bar, \
-    save_model, save_binary_img, plot_spectrum, plot_amplitude, plot_amplitude_and_phi
+    save_model, save_binary_img, plot_spectrum, plot_amplitude
 from Datasets import Dataset_YH
-from losses import SpectrumLoss
 
 model_names = sorted(name for name in models.__dict__
                      if not name.startswith("__")
@@ -29,7 +24,8 @@ model_names = sorted(name for name in models.__dict__
 parser = argparse.ArgumentParser(description='VAE training for NSF project')
 
 # General MODEL parameters
-parser.add_argument('--model', default='SpectrumNet50', choices=model_names, type=str, help='choosing network')
+parser.add_argument('--model', default='SpectrumVAE', choices=model_names, type=str, help='choosing network')
+parser.add_argument('--latent_dim', default=128, type=int)
 
 # Parameters for  dataset
 parser.add_argument('--traindir', default='/home/g1007540910/NSFdata/train_data', type=str, metavar='PATH',
@@ -40,11 +36,10 @@ parser.add_argument('--testdir', default='/home/g1007540910/NSFdata/test_data', 
 # Parameters for  training
 parser.add_argument('--resume', default='', type=str, metavar='PATH', help='path to latest checkpoint')
 parser.add_argument('--small', action='store_true', help='Showcase on small set')
-parser.add_argument('--es', default=100, type=int, help='epoch size')
+parser.add_argument('--es', default=70, type=int, help='epoch size')
 parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
-parser.add_argument('--bs', default=256, type=int, help='batch size, better to have a square number')
-parser.add_argument('--scheduler_gamma', default=0.5, type=float, help='scheduler reduce')
-parser.add_argument('--scheduler_step', default=20, type=int, help='scheduler step')
+parser.add_argument('--bs', default=144, type=int, help='batch size, better to have a square number')
+parser.add_argument('--scheduler_gamma', default=0.5, type=float, help='weight decay')
 # weight for specturm loss
 parser.add_argument('--amp_weight', default=1.0, type=float, help='weight for specturm loss')
 parser.add_argument('--phi_weight', default=0.1, type=float, help='weight for specturm loss')
@@ -55,8 +50,8 @@ parser.add_argument('--val_num', default=8, type=int,
 
 args = parser.parse_args()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-args.checkpoint = './checkpoints/spectrumEncoder/%s-amp%s-phi%s' % (
-    args.model, args.amp_weight, args.phi_weight)
+args.checkpoint = './checkpoints/spectrum/%s-%s-amp%s-phi%s' % (
+    args.model, args.latent_dim, args.amp_weight, args.phi_weight)
 if not os.path.isdir(args.checkpoint):
     mkdir_p(args.checkpoint)
 
@@ -72,6 +67,13 @@ M_N = args.bs / train_dataset.len  # for the loss
 print('==> Preparing testing data..')
 test_dataset = Dataset_YH(args.testdir, small=args.small, transform=transform)
 
+# train_mean, train_std = get_mean_and_std(train_dataset)
+# test_mean, test_std = get_mean_and_std(test_dataset)
+# print(f"train mean std: {train_mean} {train_std}")
+# print(f"test  mean std: {test_mean} {test_std}")
+# train mean std: 0.27979007363319397 0.44508227705955505
+# test  mean std: 0.2811497151851654 0.44574955105781555
+
 # data loader
 trainloader = torch.utils.data.DataLoader(train_dataset, batch_size=args.bs, shuffle=True, num_workers=4)
 testloader = torch.utils.data.DataLoader(test_dataset, batch_size=args.bs, shuffle=False, num_workers=4)
@@ -84,7 +86,7 @@ def main():
 
     # Model
     print('==> Building model..')
-    net = models.__dict__[args.model]()
+    net = models.__dict__[args.model](in_channels=1, latent_dim=args.latent_dim)
     net = net.to(device)
 
     if device == 'cuda':
@@ -93,9 +95,8 @@ def main():
         net = torch.nn.DataParallel(net)
         cudnn.benchmark = True
 
-    optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.scheduler_step, gamma=args.scheduler_gamma)
-    criterion = SpectrumLoss(args.amp_weight, args.phi_weight)
+    optimizer = optim.Adam(net.parameters(), lr=args.lr)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=args.scheduler_gamma)
 
     if args.resume:
         # Load checkpoint.
@@ -109,7 +110,9 @@ def main():
             print("==> No checkpoint found at '{}'".format(args.resume))
     else:
         logger = Logger(os.path.join(args.checkpoint, 'log.txt'))
-        logger.set_names(['Epoch Number', 'Learning Rate', 'Train Loss', "amp Loss", "phi Loss"])
+        logger.set_names(['Epoch Number', 'Learning Rate', 'Train Loss', 'Recons Loss', 'KLD Loss', "P_amp Loss", "P_phi Loss",
+                          # "G_amp Loss", "G_phi Loss"
+                          ])
 
     if not args.evaluate:
         # training
@@ -117,75 +120,133 @@ def main():
         for epoch in range(start_epoch, args.es):
             current_lr = optimizer.param_groups[0]['lr']
             print('\nStage_1 Epoch: %d | Learning rate: %f ' % (epoch + 1, current_lr))
-            train_out = train(net, trainloader, optimizer, criterion)  # {train_loss, recons_loss, kld_loss}
+            train_out = train(net, trainloader, optimizer)  # {train_loss, recons_loss, kld_loss}
             save_model(net, optimizer, epoch, os.path.join(args.checkpoint, 'checkpoint.pth'))
             if train_out["train_loss"] < best_loss:
                 save_model(net, optimizer, epoch, os.path.join(args.checkpoint, 'checkpoint_best.pth'),
                            loss=train_out["train_loss"])
                 best_loss = train_out["train_loss"]
             logger.append([epoch + 1, current_lr, train_out["train_loss"],
-                           train_out["loss_amp"], train_out["loss_phi"]
+                           train_out["recons_loss"], train_out["kld_loss"],
+                           train_out["predict_amp_loss"], train_out["predict_phi_loss"],
+                           # train_out["generate_amp_loss"], train_out["generate_phi_loss"],
                            ])
             scheduler.step()
-            if epoch % 5 == 0:
-                generate_images(net, valloader, name=f"epoch{epoch}_spectrum.png")
+            if epoch%5==0:
+                generate_images(net, valloader, name=f"epoch{epoch}_reconstruct")
         logger.close()
         print(f"\n==> Finish training..\n")
 
     print("===> start evaluating ...")
-    generate_images(net, valloader, name="test_spectrum.png")
+    generate_images(net, valloader, name="test_reconstruct")
     # sample_images_random(net, name="test_sample_random")
     # sample_images_spectrum(net, name="test_sample_spectrum")
 
 
-def train(net, trainloader, optimizer, criterion):
+def train(net, trainloader, optimizer):
     net.train()
     train_loss = 0
-    loss_amp = 0
-    loss_phi = 0
+    recons_loss = 0
+    kld_loss = 0
+    predict_amp_loss = 0
+    predict_phi_loss = 0
+    # generate_amp_loss = 0
+    # generate_phi_loss = 0
 
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         inputs = inputs.to(device)
         targets = targets.to(device)
         optimizer.zero_grad()
-        results = net(inputs)
-        loss_dict = criterion(results, targets)
+        result = net(inputs)
+        loss_dict = net.module.loss_function(result, targets=targets, M_N=M_N,
+                                             amp_weight=args.amp_weight,
+                                             phi_weight=args.phi_weight)  # loss, Reconstruction_Loss, KLD, 1,2,3,4
         loss = loss_dict['loss']
         loss.backward()
         optimizer.step()
 
         train_loss += loss.item()
-        loss_amp += (loss_dict['loss_amp']).item()
-        loss_phi += (loss_dict['loss_phi']).item()
+        recons_loss += (loss_dict['Reconstruction_Loss']).item()
+        kld_loss += (loss_dict['KLD']).item()
+        predict_amp_loss += (loss_dict["predict_amp_loss"]).item()
+        predict_phi_loss += (loss_dict["predict_phi_loss"]).item()
+        # generate_amp_loss += (loss_dict["generate_amp_loss"]).item()
+        # generate_phi_loss += (loss_dict["generate_phi_loss"]).item()
 
         progress_bar(batch_idx, len(trainloader),
-                     'All:%.3f |amp:%.3f |hpi:%.3f'
+                     'All:%.3f |Rec:%.3f |KLD:%.3f |Pre:%.3f '
                      % (train_loss / (batch_idx + 1),
-                        loss_amp / (batch_idx + 1),
-                        loss_phi / (batch_idx + 1)
+                        recons_loss / (batch_idx + 1),
+                        kld_loss / (batch_idx + 1),
+                        (predict_amp_loss+predict_phi_loss) / (batch_idx + 1),
+                        # (generate_amp_loss+generate_phi_loss) / (batch_idx + 1)
                         )
                      )
 
     return {
         "train_loss": train_loss / (batch_idx + 1),
-        "loss_amp": loss_amp / (batch_idx + 1),
-        "loss_phi": loss_phi / (batch_idx + 1)
+        "recons_loss": recons_loss / (batch_idx + 1),
+        "kld_loss": kld_loss / (batch_idx + 1),
+        "predict_amp_loss": predict_amp_loss / (batch_idx + 1),
+        "predict_phi_loss": predict_phi_loss / (batch_idx + 1),
+        # "generate_amp_loss": generate_amp_loss / (batch_idx + 1),
+        # "generate_phi_loss": generate_phi_loss / (batch_idx + 1),
     }
 
 
-def generate_images(net, valloader, name="val.png"):
+def generate_images(net, valloader, name="val"):
     dataloader_iterator = iter(valloader)
     with torch.no_grad():
         img, target = next(dataloader_iterator)
         img = img.to(device)
         target = target.to(device)
-        img = img[:args.val_num]
-        target = target[:args.val_num]
-        predict = net(img)
-        plot_amplitude_and_phi([target, predict],
+        out = net.module.generate(img)
+        recons = out["recons"]
+        predict_spectrum = out["predict_spectrum"]
+        result = torch.cat([img, recons], dim=0)
+        save_binary_img(result.data,
+                        os.path.join(args.checkpoint, f"{name}_image.png"),
+                        nrow=args.val_num)
+        plot_amplitude([target, predict_spectrum],
                        ['target', 'predict'],
-                       os.path.join(args.checkpoint, f"{name}")
+                       os.path.join(args.checkpoint, f"{name}_amplitude.png")
                        )
+
+
+def sample_images_random(net, name="rand_sample"):
+    with torch.no_grad():
+        z = torch.randn(args.val_num, args.latent_dim)
+        z = z.to(device)
+        results = net.module.sample(z)
+        image = results["image"]
+        specturm = results["specturm"]
+        save_binary_img(image.data,
+                        os.path.join(args.checkpoint, f"{name}_image.png"),
+                        nrow=args.val_num)
+        plot_spectrum([specturm],
+                      ['spectrum'],
+                      os.path.join(args.checkpoint, f"{name}_spectrum.png")
+                      )
+
+def sample_images_spectrum(net, name="rand_sample"):
+    dataloader_iterator = iter(valloader)
+    with torch.no_grad():
+        img, target = next(dataloader_iterator)
+        img = img.to(device)
+        target = target.to(device)
+        z = torch.randn(args.val_num, args.latent_dim)
+        z = z.to(device)
+        results = net.module.sample(z, target)
+        image = results["image"]
+        specturm = results["specturm"]
+        result_img = torch.cat([img, image], dim=0)
+        save_binary_img(result_img.data,
+                        os.path.join(args.checkpoint, f"{name}_image.png"),
+                        nrow=args.val_num)
+        plot_spectrum([target, specturm],
+                      ['target','spectrum'],
+                      os.path.join(args.checkpoint, f"{name}_spectrum.png")
+                      )
 
 
 if __name__ == '__main__':
