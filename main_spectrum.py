@@ -37,7 +37,7 @@ parser.add_argument('--testdir', default='/home/g1007540910/NSFdata/test_data', 
 parser.add_argument('--resume', default='', type=str, metavar='PATH', help='path to latest checkpoint')
 parser.add_argument('--small', action='store_true', help='Showcase on small set')
 parser.add_argument('--es', default=70, type=int, help='epoch size')
-parser.add_argument('--lr', default=0.001, type=float, help='learning rate')
+parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
 parser.add_argument('--bs', default=144, type=int, help='batch size, better to have a square number')
 parser.add_argument('--scheduler_gamma', default=0.5, type=float, help='weight decay')
 # weight for specturm loss
@@ -96,7 +96,7 @@ def main():
         cudnn.benchmark = True
 
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=args.scheduler_gamma)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=args.scheduler_gamma)
 
     if args.resume:
         # Load checkpoint.
