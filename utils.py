@@ -383,7 +383,7 @@ def plot_amplitude_and_phi(spectrum_list: List[torch.Tensor], labels: List[str],
     amplitudes = amplitudes.permute(0, 2, 1) # [batch, n, 183]
     batch, n, points = amplitudes.shape
     amplitudes = amplitudes.data.cpu().numpy()
-    plt.figure(figsize=(9 * batch, 6))
+    plt.figure(figsize=(9 * batch, 6*3))
     # plot amplitude
     for nnn in range(3):
         for i in range(0, batch):
