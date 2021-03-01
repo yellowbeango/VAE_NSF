@@ -18,7 +18,7 @@ class VAELoss(nn.Module):
                :return:
                """
         recons = out["reconstruct"]
-        input = out["inputs"]
+        input = out["input"]
         mu = out["mu"]
         log_var = out["log_var"]
 
