@@ -95,8 +95,8 @@ def main():
     forward_net.load_state_dict(torch.load(args.forward_resume))
     checkpoint = torch.load(args.vae_resume)
     vae_net.load_state_dict(checkpoint['net'])
-    checkpoint = torch.load(args.embedding_resume)
-    embedding_net.load_state_dict(checkpoint['net'])
+    checkpoint_embed = torch.load(args.embedding_resume)
+    embedding_net.load_state_dict(checkpoint_embed['net'])
 
     print("===> start evaluating ...")
     generate_images(forward_net, vae_net, embedding_net, valloader, name="test_spectrum.png")
