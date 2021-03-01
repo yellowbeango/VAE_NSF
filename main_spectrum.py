@@ -99,10 +99,10 @@ def main():
     if args.resume:
         # Load checkpoint.
         if os.path.isfile(args.resume):
-            checkpoint = torch.load(args.resume)
             try:
-                net.load_state_dict(checkpoint)
+                net.load_state_dict(torch.load(args.resume))
             except:
+                checkpoint = torch.load(args.resume)
                 net.load_state_dict(checkpoint['net'])
                 optimizer.load_state_dict(checkpoint['optimizer'])
                 logger = Logger(os.path.join(args.checkpoint, 'log.txt'), resume=True)
