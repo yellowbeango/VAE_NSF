@@ -83,9 +83,9 @@ def main():
     print('==> Building model..')
     forward_net = models.__dict__[args.forward]()
     forward_net = forward_net.to(device)
-    vae_net = models.__dict__[args.vae]()
+    vae_net = models.__dict__[args.vae](in_channels=1, latent_dim=args.latent_dim)
     vae_net = vae_net.to(device)
-    embedding_net = models.__dict__[args.embedding]()
+    embedding_net = models.__dict__[args.embedding](points=183, laten_dim=args.latent_dim)
     embedding_net = embedding_net.to(device)
     if device == 'cuda':
         cudnn.benchmark = True
