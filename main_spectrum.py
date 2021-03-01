@@ -29,7 +29,7 @@ model_names = sorted(name for name in models.__dict__
 parser = argparse.ArgumentParser(description='VAE training for NSF project')
 
 # General MODEL parameters
-parser.add_argument('--model', default='SpectrumNet50', choices=model_names, type=str, help='choosing network')
+parser.add_argument('--model', default='CNN_res_64_64', choices=model_names, type=str, help='choosing network')
 
 # Parameters for  dataset
 parser.add_argument('--traindir', default='/home/g1007540910/NSFdata/train_data', type=str, metavar='PATH',
@@ -44,7 +44,7 @@ parser.add_argument('--es', default=100, type=int, help='epoch size')
 parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
 parser.add_argument('--bs', default=256, type=int, help='batch size, better to have a square number')
 parser.add_argument('--scheduler_gamma', default=0.5, type=float, help='scheduler reduce')
-parser.add_argument('--scheduler_step', default=20, type=int, help='scheduler step')
+parser.add_argument('--scheduler_step', default=6, type=int, help='scheduler step')
 # weight for specturm loss
 parser.add_argument('--amp_weight', default=1.0, type=float, help='weight for specturm loss')
 parser.add_argument('--phi_weight', default=0.1, type=float, help='weight for specturm loss')
@@ -185,8 +185,8 @@ def generate_images(net, valloader, name="val.png"):
         plot_amplitude_and_phi([target, predict],
                                ['target', 'predict'],
                                num=args.val_num,
-                               save_path = os.path.join(args.checkpoint, f"{name}")
-                       )
+                               save_path=os.path.join(args.checkpoint, f"{name}")
+                               )
 
 
 if __name__ == '__main__':
