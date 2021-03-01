@@ -9,3 +9,4 @@ from __future__ import absolute_import
 # from .SpectrumNet import *
 from .model_forword import CNN_res_64_64
 from .vanilla_vae import *
+from .embedding import Embedding
