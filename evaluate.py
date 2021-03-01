@@ -72,12 +72,10 @@ SetRange = transforms.Lambda(lambda X: 2 * X - 1.)
 transform = transforms.Compose([
     SetRange  # rescale to [-1,1] considering the tanh activation
 ])
-# print('==> Preparing training data..')
-# train_dataset = Dataset_YH(args.traindir, small=args.small, transform=transform)
-# M_N = args.bs / train_dataset.len  # for the loss
-print('==> Preparing testing data..')
+print('==> Preparing training data..')
 train_dataset = Dataset_YH(args.traindir, small=args.small, transform=transform)
 M_N = args.bs / train_dataset.len  # for the loss
+print('==> Preparing testing data..')
 test_dataset = Dataset_YH(args.testdir, small=args.small, transform=transform)
 
 # data loader
