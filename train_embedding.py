@@ -47,7 +47,7 @@ parser.add_argument('--val_num', default=8, type=int,
 args = parser.parse_args()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 args.checkpoint = './checkpoints/%s-%s' % (
-    args.model, args.latent_dim)
+    args.embed, args.latent_dim)
 if not os.path.isdir(args.checkpoint):
     mkdir_p(args.checkpoint)
 
