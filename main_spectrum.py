@@ -100,9 +100,12 @@ def main():
         # Load checkpoint.
         if os.path.isfile(args.resume):
             checkpoint = torch.load(args.resume)
-            net.load_state_dict(checkpoint['net'])
-            optimizer.load_state_dict(checkpoint['optimizer'])
-            logger = Logger(os.path.join(args.checkpoint, 'log.txt'), resume=True)
+            try:
+                net.load_state_dict(checkpoint)
+            except:
+                net.load_state_dict(checkpoint['net'])
+                optimizer.load_state_dict(checkpoint['optimizer'])
+                logger = Logger(os.path.join(args.checkpoint, 'log.txt'), resume=True)
             print('==> Resuming from checkpoint, loaded..')
         else:
             print("==> No checkpoint found at '{}'".format(args.resume))
