@@ -152,7 +152,7 @@ def generate_images(net, valloader, name="val"):
     with torch.no_grad():
         img, spe = next(dataloader_iterator)
         img = img.to(device)
-        recons = net.module.generate(img)
+        recons = net.generate(img)
         result = torch.cat([img, recons], dim=0)
         save_binary_img(result.data,
                         os.path.join(args.checkpoint, f"{name}.png"),
@@ -163,7 +163,7 @@ def sample_images(net, name="val"):
     with torch.no_grad():
         z = torch.randn(args.val_num, args.latent_dim)
         z = z.to(device)
-        sampled = net.module.sample(z)
+        sampled = net.sample(z)
         save_binary_img(sampled.data,
                         os.path.join(args.checkpoint, f"{name}.png"),
                         nrow=args.val_num)
