@@ -90,7 +90,7 @@ def main():
     if device == 'cuda':
         # Considering the data scale and model, it is unnecessary to use DistributedDataParallel
         # which could speed up the training and inference compared to DataParallel
-        net = torch.nn.DataParallel(net)
+        # net = torch.nn.DataParallel(net)
         cudnn.benchmark = True
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.scheduler_step, gamma=args.scheduler_gamma)
