@@ -125,7 +125,7 @@ class SpectrumNet(nn.Module):
         amp = spectrum[:, :n]
         cos = spectrum[:, n:2*n]
         sin = spectrum[:, 2*n:]
-        amp = torch.sigmoid(amp)
+        # amp = torch.sigmoid(amp)
         cos = 2 * torch.sigmoid(cos) - 1
         sin = 2 * torch.sigmoid(sin) - 1
         out = torch.stack([amp, cos, sin], dim=2)  # [batch_size, self.points, 3]
