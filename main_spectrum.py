@@ -44,7 +44,7 @@ parser.add_argument('--es', default=100, type=int, help='epoch size')
 parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
 parser.add_argument('--bs', default=256, type=int, help='batch size, better to have a square number')
 parser.add_argument('--scheduler_gamma', default=0.5, type=float, help='scheduler reduce')
-parser.add_argument('--scheduler_step', default=6, type=int, help='scheduler step')
+parser.add_argument('--scheduler_step', default=5, type=int, help='scheduler step')
 # weight for specturm loss
 parser.add_argument('--amp_weight', default=1.0, type=float, help='weight for specturm loss')
 parser.add_argument('--phi_weight', default=0.1, type=float, help='weight for specturm loss')
@@ -92,8 +92,7 @@ def main():
         # which could speed up the training and inference compared to DataParallel
         net = torch.nn.DataParallel(net)
         cudnn.benchmark = True
-
-    optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
+    optimizer = optim.Adam(net.parameters(), lr=args.lr)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.scheduler_step, gamma=args.scheduler_gamma)
     criterion = SpectrumLoss(args.amp_weight, args.phi_weight)
 
