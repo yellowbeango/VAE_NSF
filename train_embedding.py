@@ -125,7 +125,7 @@ def main():
         print(f"\n==> Finish training..\n")
 
 
-def train(net, embed, optimizer, criterion):
+def train(net, embed, trainloader, optimizer, criterion):
     embed.train()
     train_loss = 0
     mu_loss = 0
