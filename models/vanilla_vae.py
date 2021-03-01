@@ -41,24 +41,6 @@ class VanillaVAE(BaseVAE):
         self.encoder = nn.Sequential(*modules)
         self.fc_mu = nn.Linear(hidden_dims[-1] * 4, latent_dim)
         self.fc_var = nn.Linear(hidden_dims[-1] * 4, latent_dim)
-        self.spectrum_to_mu = nn.Sequential(
-            nn.Linear(self.spectrum_dim, 512),
-            nn.BatchNorm1d(512),
-            nn.LeakyReLU(),
-            nn.Linear(512, 512),
-            nn.BatchNorm1d(512),
-            nn.LeakyReLU(),
-            nn.Linear(512, self.latent_dim),
-        )
-        self.spectrum_to_var = nn.Sequential(
-            nn.Linear(self.spectrum_dim, 512),
-            nn.BatchNorm1d(512),
-            nn.LeakyReLU(),
-            nn.Linear(512, 512),
-            nn.BatchNorm1d(512),
-            nn.LeakyReLU(),
-            nn.Linear(512, self.latent_dim),
-        )
 
         # Build Decoder
         modules = []
@@ -172,15 +154,3 @@ class VanillaVAE(BaseVAE):
         """
 
         return self.forward(x)["reconstruct"]
-
-    def guided(self, spectrum, **kwargs) -> Tensor:
-        """
-        Generate image by spectrum
-        :param spectrum:
-        :param kwargs:
-        :return:
-        """
-        mu = self.spectrum_to_mu(spectrum)
-        log_var = self.spectrum_to_var(spectrum)
-        z = self.reparameterize(mu, log_var)
-        return self.decode(z)
