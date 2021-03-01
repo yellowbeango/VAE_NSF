@@ -136,6 +136,8 @@ def train(net, trainloader, optimizer, criterion):
         train_loss += loss.item()
         recons_loss += (loss_dict['Reconstruction_Loss']).item()
         kld_loss += (loss_dict['KLD']).item()
+        if kld_loss / (batch_idx + 1) >10:
+            break
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Rec_Loss: %.3f | KLD_Loss: %.3f'
                      % (train_loss / (batch_idx + 1), recons_loss / (batch_idx + 1), kld_loss / (batch_idx + 1)))

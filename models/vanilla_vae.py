@@ -171,7 +171,7 @@ class VanillaVAE(BaseVAE):
         :return: (Tensor) [B x C x H x W]
         """
 
-        return self.forward(x)[0]
+        return self.forward(x)["reconstruct"]
 
     def guided(self, spectrum, **kwargs) -> Tensor:
         """
