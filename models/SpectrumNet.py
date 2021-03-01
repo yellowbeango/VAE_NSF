@@ -92,7 +92,7 @@ class SpectrumNet(nn.Module):
         self.convbnrelu = nn.Sequential(
             nn.Conv2d(input_channel, 64, kernel_size=5, stride=2, padding=2, bias=False),
             nn.BatchNorm2d(64),
-            nn.leaky_relu(inplace=True)
+            nn.LeakyReLU(inplace=True)
         )
         self.conv1 = nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=2, reduction=reduction)
