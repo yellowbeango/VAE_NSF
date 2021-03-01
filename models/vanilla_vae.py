@@ -1,14 +1,13 @@
 import torch
 from .base import BaseVAE
 from torch import nn
-from torch.nn import functional as F
-from abc import abstractmethod
-from typing import List, Callable, Union, Any, TypeVar, Tuple
+from typing import List, TypeVar
 
 # from torch import tensor as Tensor
 Tensor = TypeVar('torch.tensor')
 
 __all__ = ['VanillaVAE']
+
 
 class VanillaVAE(BaseVAE):
 
@@ -16,10 +15,12 @@ class VanillaVAE(BaseVAE):
                  in_channels: int,
                  latent_dim: int,
                  hidden_dims: List = None,
+                 spectrum_dim=366,
                  **kwargs) -> None:
         super(VanillaVAE, self).__init__()
 
         self.latent_dim = latent_dim
+        self.spectrum_dim = spectrum_dim
 
         modules = []
         if hidden_dims is None:
@@ -29,18 +30,18 @@ class VanillaVAE(BaseVAE):
         for h_dim in hidden_dims:
             modules.append(
                 nn.Sequential(
-                    # first
-                    nn.Conv2d(in_channels, out_channels=in_channels, kernel_size=3, stride=1, padding=1),
-                    nn.BatchNorm2d(in_channels),
-                    nn.LeakyReLU(),
-                    # second
-                    nn.Conv2d(in_channels, out_channels=h_dim, kernel_size=3, stride=2, padding=1),
+                    nn.Conv2d(in_channels, out_channels=h_dim,
+                              kernel_size=3, stride=1, padding=1),
                     nn.BatchNorm2d(h_dim),
                     nn.LeakyReLU(),
-                    # third
-                    nn.Conv2d(h_dim, out_channels=h_dim, kernel_size=3, stride=1, padding=1),
+                    nn.Conv2d(h_dim, out_channels=h_dim,
+                              kernel_size=3, stride=2, padding=1),
                     nn.BatchNorm2d(h_dim),
                     nn.LeakyReLU(),
+                    nn.Conv2d(h_dim, out_channels=h_dim,
+                              kernel_size=3, stride=1, padding=1),
+                    nn.BatchNorm2d(h_dim),
+                    nn.LeakyReLU()
                 )
             )
             in_channels = h_dim
@@ -48,6 +49,24 @@ class VanillaVAE(BaseVAE):
         self.encoder = nn.Sequential(*modules)
         self.fc_mu = nn.Linear(hidden_dims[-1] * 4, latent_dim)
         self.fc_var = nn.Linear(hidden_dims[-1] * 4, latent_dim)
+        self.spectrum_to_mu = nn.Sequential(
+            nn.Linear(self.spectrum_dim, 512),
+            nn.BatchNorm1d(512),
+            nn.LeakyReLU(),
+            nn.Linear(512, 512),
+            nn.BatchNorm1d(512),
+            nn.LeakyReLU(),
+            nn.Linear(512, self.latent_dim),
+        )
+        self.spectrum_to_var = nn.Sequential(
+            nn.Linear(self.spectrum_dim, 512),
+            nn.BatchNorm1d(512),
+            nn.LeakyReLU(),
+            nn.Linear(512, 512),
+            nn.BatchNorm1d(512),
+            nn.LeakyReLU(),
+            nn.Linear(512, self.latent_dim),
+        )
 
         # Build Decoder
         modules = []
@@ -59,23 +78,21 @@ class VanillaVAE(BaseVAE):
         for i in range(len(hidden_dims) - 1):
             modules.append(
                 nn.Sequential(
-                    # first
-                    nn.Conv2d(hidden_dims[i], out_channels=hidden_dims[i], kernel_size=3, stride=1, padding=1),
-                    nn.BatchNorm2d(hidden_dims[i]),
+                    nn.Conv2d(hidden_dims[i], hidden_dims[i + 1], kernel_size=3, stride=1, padding=1),
+                    nn.BatchNorm2d(hidden_dims[i + 1]),
                     nn.LeakyReLU(),
-                    # second
-                    nn.Upsample(scale_factor=2),
-                    nn.Conv2d(hidden_dims[i], out_channels=hidden_dims[i + 1], kernel_size=3, stride=1, padding=1),
-                    nn.BatchNorm2d(hidden_dims[i+1]),
+                    nn.ConvTranspose2d(hidden_dims[i + 1],
+                                       hidden_dims[i + 1],
+                                       kernel_size=3,
+                                       stride=2,
+                                       padding=1,
+                                       output_padding=1),
+                    nn.BatchNorm2d(hidden_dims[i + 1]),
                     nn.LeakyReLU(),
-                    # third
-                    nn.Conv2d(hidden_dims[i+1], out_channels=hidden_dims[i+1], kernel_size=3, stride=1, padding=1),
-                    nn.BatchNorm2d(hidden_dims[i+1]),
+                    nn.Conv2d(hidden_dims[i + 1], hidden_dims[i + 1], kernel_size=3, stride=1, padding=1),
+                    nn.BatchNorm2d(hidden_dims[i + 1]),
                     nn.LeakyReLU(),
                 )
-                    # nn.ConvTranspose2d(hidden_dims[i], hidden_dims[i + 1], kernel_size=3, stride=2, padding=1, output_padding=1),
-                    # nn.BatchNorm2d(hidden_dims[i + 1]),
-                    # nn.LeakyReLU())
             )
 
         self.decoder = nn.Sequential(*modules)
@@ -135,33 +152,15 @@ class VanillaVAE(BaseVAE):
         eps = torch.randn_like(std)
         return eps * std + mu
 
-    def forward(self, input: Tensor, **kwargs) -> List[Tensor]:
-        mu, log_var = self.encode(input)
+    def forward(self, inputs: Tensor, **kwargs):
+        mu, log_var = self.encode(inputs)
         z = self.reparameterize(mu, log_var)
-        return [self.decode(z), input, mu, log_var]
-
-    def loss_function(self,
-                      *args,
-                      **kwargs) -> dict:
-        """
-        Computes the VAE loss function.
-        KL(N(\mu, \sigma), N(0, 1)) = \log \frac{1}{\sigma} + \frac{\sigma^2 + \mu^2}{2} - \frac{1}{2}
-        :param args:
-        :param kwargs:
-        :return:
-        """
-        recons = args[0]
-        input = args[1]
-        mu = args[2]
-        log_var = args[3]
-
-        kld_weight = kwargs['M_N']  # Account for the minibatch samples from the dataset
-        recons_loss = F.mse_loss(recons, input)
-
-        kld_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim=1), dim=0)
-
-        loss = recons_loss + kld_weight * kld_loss
-        return {'loss': loss, 'Reconstruction_Loss': recons_loss, 'KLD': -kld_loss}
+        return {
+            "reconstruct": self.decode(z),
+            "input": inputs,
+            "mu": mu,
+            "log_var": log_var
+        }
 
     def sample(self, z, **kwargs) -> Tensor:
         """
@@ -188,10 +187,14 @@ class VanillaVAE(BaseVAE):
 
         return self.forward(x)[0]
 
-
-def demo():
-    myvae = VanillaVAE(in_channels=1, latent_dim=128)
-    input = torch.rand(1,1,64,64)
-    out = myvae(input)
-
-demo()
+    def guided(self, spectrum, **kwargs) -> Tensor:
+        """
+        Generate image by spectrum
+        :param spectrum:
+        :param kwargs:
+        :return:
+        """
+        mu = self.spectrum_to_mu(spectrum)
+        log_var = self.spectrum_to_var(spectrum)
+        z = self.reparameterize(mu, log_var)
+        return self.decode(z)
