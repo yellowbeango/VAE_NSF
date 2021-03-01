@@ -31,15 +31,7 @@ class VanillaVAE(BaseVAE):
             modules.append(
                 nn.Sequential(
                     nn.Conv2d(in_channels, out_channels=h_dim,
-                              kernel_size=3, stride=1, padding=1),
-                    nn.BatchNorm2d(h_dim),
-                    nn.LeakyReLU(),
-                    nn.Conv2d(h_dim, out_channels=h_dim,
                               kernel_size=3, stride=2, padding=1),
-                    nn.BatchNorm2d(h_dim),
-                    nn.LeakyReLU(),
-                    nn.Conv2d(h_dim, out_channels=h_dim,
-                              kernel_size=3, stride=1, padding=1),
                     nn.BatchNorm2d(h_dim),
                     nn.LeakyReLU()
                 )
@@ -78,20 +70,14 @@ class VanillaVAE(BaseVAE):
         for i in range(len(hidden_dims) - 1):
             modules.append(
                 nn.Sequential(
-                    nn.Conv2d(hidden_dims[i], hidden_dims[i + 1], kernel_size=3, stride=1, padding=1),
-                    nn.BatchNorm2d(hidden_dims[i + 1]),
-                    nn.LeakyReLU(),
-                    nn.ConvTranspose2d(hidden_dims[i + 1],
+                    nn.ConvTranspose2d(hidden_dims[i],
                                        hidden_dims[i + 1],
                                        kernel_size=3,
                                        stride=2,
                                        padding=1,
                                        output_padding=1),
                     nn.BatchNorm2d(hidden_dims[i + 1]),
-                    nn.LeakyReLU(),
-                    nn.Conv2d(hidden_dims[i + 1], hidden_dims[i + 1], kernel_size=3, stride=1, padding=1),
-                    nn.BatchNorm2d(hidden_dims[i + 1]),
-                    nn.LeakyReLU(),
+                    nn.LeakyReLU()
                 )
             )
 

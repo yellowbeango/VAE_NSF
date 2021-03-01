@@ -76,7 +76,7 @@ def main():
         cudnn.benchmark = True
 
     optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.wd)
-    scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=args.scheduler_gamma)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.scheduler_step, gamma=args.scheduler_gamma)
     criterion = VAELoss(M_N=M_N)
 
     if args.resume:
