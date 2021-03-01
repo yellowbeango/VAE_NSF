@@ -115,7 +115,7 @@ def main():
             train_out = train(net, embed, trainloader, optimizer,criterion)  # {train_loss, recons_loss, kld_loss}
             save_model(embed, optimizer, epoch, os.path.join(args.checkpoint, 'embedding.pth'))
             if train_out["train_loss"] < best_loss:
-                save_model(net, optimizer, epoch, os.path.join(args.checkpoint, 'embedding_best.pth'),
+                save_model(embed, optimizer, epoch, os.path.join(args.checkpoint, 'embedding_best.pth'),
                            loss=train_out["train_loss"])
                 best_loss = train_out["train_loss"]
             logger.append([epoch + 1, scheduler.get_last_lr()[-1],

@@ -42,7 +42,7 @@ parser.add_argument('--vae_resume',
                     default='/home/g1007540910/VAE_NSF/checkpoints/VanillaVAE-128/checkpoint_best.pth',
                     type=str, metavar='PATH', help='path to latest checkpoint')
 parser.add_argument('--embedding_resume',
-                    default='/home/g1007540910/VAE_NSF/checkpoints/VanillaVAE-128/embedding_best.pth',
+                    default='/home/g1007540910/VAE_NSF/checkpoints/VanillaVAE-128/embedding.pth',
                     type=str, metavar='PATH', help='path to latest checkpoint')
 
 parser.add_argument('--latent_dim', default=128, type=int)
