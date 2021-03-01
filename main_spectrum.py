@@ -186,7 +186,6 @@ def generate_images(net, valloader, name="val.png"):
         predict = net(img)
         plot_amplitude_and_phi([target, predict],
                                ['target', 'predict'],
-                               num=args.val_num,
                                save_path=os.path.join(args.checkpoint, f"{name}")
                                )
 
