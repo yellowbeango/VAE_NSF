@@ -14,7 +14,7 @@ class SELayer(nn.Module):
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.fc = nn.Sequential(
             nn.Linear(channel, channel // reduction, bias=False),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(inplace=True),
             nn.Linear(channel // reduction, channel, bias=False),
             nn.Sigmoid()
         )
@@ -43,10 +43,10 @@ class SEPreActBlock(nn.Module):
             )
 
     def forward(self, x):
-        out = F.relu(self.bn1(x))
+        out = F.leaky_relu(self.bn1(x))
         shortcut = self.shortcut(out) if hasattr(self, 'shortcut') else x
         out = self.conv1(out)
-        out = self.conv2(F.relu(self.bn2(out)))
+        out = self.conv2(F.leaky_relu(self.bn2(out)))
         # Add SE block
         out = self.se(out)
         out += shortcut
@@ -73,11 +73,11 @@ class SEPreActBootleneck(nn.Module):
             )
 
     def forward(self, x):
-        out = F.relu(self.bn1(x))
+        out = F.leaky_relu(self.bn1(x))
         shortcut = self.shortcut(out) if hasattr(self, 'shortcut') else x
         out = self.conv1(out)
-        out = self.conv2(F.relu(self.bn2(out)))
-        out = self.conv3(F.relu(self.bn3(out)))
+        out = self.conv2(F.leaky_relu(self.bn2(out)))
+        out = self.conv3(F.leaky_relu(self.bn3(out)))
         # Add SE block
         out = self.se(out)
         out += shortcut
@@ -92,7 +92,7 @@ class SpectrumNet(nn.Module):
         self.convbnrelu = nn.Sequential(
             nn.Conv2d(input_channel, 64, kernel_size=5, stride=2, padding=2, bias=False),
             nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True)
+            nn.leaky_relu(inplace=True)
         )
         self.conv1 = nn.Conv2d(1, 64, kernel_size=3, stride=1, padding=1, bias=False)
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=2, reduction=reduction)
