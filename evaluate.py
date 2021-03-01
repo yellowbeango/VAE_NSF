@@ -99,7 +99,7 @@ def main():
     embedding_net.load_state_dict(checkpoint_embed['net'])
 
     print("===> start evaluating ...")
-    generate_images(forward_net, vae_net, embedding_net, valloader, name="test_spectrum.png")
+    generate_images(forward_net, vae_net, embedding_net, valloader, name="evaluate")
     # sample_images_random(net, name="test_sample_random")
     # sample_images_spectrum(net, name="test_sample_spectrum")
 
