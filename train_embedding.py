@@ -97,6 +97,7 @@ def main():
         # Load checkpoint.
         if os.path.isfile(args.resume):
             checkpoint = torch.load(args.resume)
+            start_epoch = checkpoint['epoch']
             embed.load_state_dict(checkpoint['net'])
             optimizer.load_state_dict(checkpoint['optimizer'])
             logger = Logger(os.path.join(args.checkpoint, 'log.txt'), resume=True)

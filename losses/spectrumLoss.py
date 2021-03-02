@@ -26,8 +26,7 @@ class SpectrumLoss(nn.Module):
 
         loss_amp = self.amp_weight * loss_amp
         loss_phi = self.phi_weight * loss_phi
-        # loss = loss_amp + loss_phi
-        loss = loss_amp
+        loss = loss_amp + loss_phi
 
         return {"loss": loss,
                 "loss_amp": loss_amp,
