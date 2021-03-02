@@ -23,9 +23,9 @@ parser.add_argument('--latent_dim', default=128, type=int)
 parser.add_argument('--embed', default='Embedding', choices=model_names, type=str, help='choosing embedding network')
 
 # Parameters for  dataset
-parser.add_argument('--traindir', default='/home/g1007540910/NSFdata/train_data', type=str, metavar='PATH',
+parser.add_argument('--traindir', default='/work/xm0036/NSFdata/train_data', type=str, metavar='PATH',
                     help='path to training set')
-parser.add_argument('--testdir', default='/home/g1007540910/NSFdata/test_data', type=str, metavar='PATH',
+parser.add_argument('--testdir', default='/work/xm0036/NSFdata/test_data', type=str, metavar='PATH',
                     help='path to testing set')
 
 # Parameters for  training
