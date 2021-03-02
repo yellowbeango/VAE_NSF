@@ -34,11 +34,11 @@ parser.add_argument('--resume_vae', default='/home/g1007540910/VAE_NSF/checkpoin
 parser.add_argument('--resume', default='',
                     type=str, metavar='PATH', help='path to latest checkpoint')
 parser.add_argument('--small', action='store_true', help='Showcase on small set')
-parser.add_argument('--es', default=80, type=int, help='epoch size')
+parser.add_argument('--es', default=600, type=int, help='epoch size')
 parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
 parser.add_argument('--bs', default=256, type=int, help='batch size, better to have a square number')
 parser.add_argument('--wd', default=0.0, type=float, help='weight decay')
-parser.add_argument('--scheduler_gamma', default=0.95, type=float)
+parser.add_argument('--scheduler_gamma', default=0.99, type=float)
 
 parser.add_argument('--evaluate', action='store_true', help='Evaluate model, ensuring the resume path is given')
 parser.add_argument('--val_num', default=8, type=int,
