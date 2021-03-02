@@ -22,19 +22,19 @@ parser.add_argument('--model', default='VanillaVAE', choices=model_names, type=s
 parser.add_argument('--latent_dim', default=128, type=int)
 
 # Parameters for  dataset
-parser.add_argument('--traindir', default='/home/g1007540910/NSFdata/train_data', type=str, metavar='PATH',
+parser.add_argument('--traindir', default='/work/xm0036/NSFdata/train_data', type=str, metavar='PATH',
                     help='path to training set')
-parser.add_argument('--testdir', default='/home/g1007540910/NSFdata/test_data', type=str, metavar='PATH',
+parser.add_argument('--testdir', default='/work/xm0036/NSFdata/test_data', type=str, metavar='PATH',
                     help='path to testing set')
 
 # Parameters for  training
 parser.add_argument('--resume', default='', type=str, metavar='PATH', help='path to latest checkpoint')
 parser.add_argument('--small', action='store_true', help='Showcase on small set')
-parser.add_argument('--es', default=80, type=int, help='epoch size')
+parser.add_argument('--es', default=500, type=int, help='epoch size')
 parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
 parser.add_argument('--bs', default=144, type=int, help='batch size, better to have a square number')
 parser.add_argument('--wd', default=0.0, type=float, help='weight decay')
-parser.add_argument('--scheduler_gamma', default=0.95, type=float)
+parser.add_argument('--scheduler_gamma', default=0.99, type=float)
 
 parser.add_argument('--evaluate', action='store_true', help='Evaluate model, ensuring the resume path is given')
 parser.add_argument('--val_num', default=8, type=int,
@@ -106,7 +106,7 @@ def main():
             logger.append([epoch + 1, scheduler.get_last_lr()[-1],
                            train_out["train_loss"], train_out["recons_loss"], train_out["kld_loss"]])
             scheduler.step()
-            if epoch>5 and epoch %10==0:
+            if epoch>5 and epoch %50==0:
                 generate_images(net, valloader, name=f"epoch{epoch}_reconstruct")
                 sample_images(net, name=f"epoch{epoch}_randsample")
         logger.close()
