@@ -29,7 +29,7 @@ parser.add_argument('--testdir', default='/home/g1007540910/NSFdata/test_data', 
                     help='path to testing set')
 
 # Parameters for  training
-parser.add_argument('--resume_vae', default='/home/g1007540910/VAE_NSF/checkpoints/VanillaVAE-128/checkpoint_best.pth',
+parser.add_argument('--resume_vae', default='/work/xm0036/VAE_NSF/checkpoints/VanillaVAE-128/checkpoint_best.pth',
                     type=str, metavar='PATH', help='path to latest checkpoint')
 parser.add_argument('--resume', default='',
                     type=str, metavar='PATH', help='path to latest checkpoint')
